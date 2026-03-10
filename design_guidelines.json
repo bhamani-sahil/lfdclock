@@ -1,0 +1,151 @@
+{
+  "project_name": "LFD Clock",
+  "design_philosophy": {
+    "identity": "Tactical Logistics",
+    "core_principles": [
+      "Precision over Decoration: Every pixel must serve the data.",
+      "The 'Clock' is God: Time remaining is the most critical metric.",
+      "Swiss Utility: Grid-based, high-density, high-contrast.",
+      "Industrial Aesthetics: Monospace fonts for IDs, sharp edges, functional colors."
+    ],
+    "anti_patterns": [
+      "No generic 'SaaS Blue' gradients.",
+      "No 'cute' 3D illustrations.",
+      "No rounded 'pill' buttons (use sharp or slightly rounded 'industrial' buttons).",
+      "No hidden data behind clicks (show as much as possible)."
+    ]
+  },
+  "typography": {
+    "font_family": {
+      "headings": "Chivo, sans-serif",
+      "body": "Public Sans, sans-serif",
+      "mono": "JetBrains Mono, monospace"
+    },
+    "scaling": {
+      "h1": "text-4xl md:text-5xl font-black tracking-tight uppercase",
+      "h2": "text-3xl font-bold tracking-tight",
+      "h3": "text-xl font-bold uppercase tracking-widest text-muted-foreground",
+      "body": "text-base font-normal leading-relaxed",
+      "data": "font-mono text-sm tracking-wide"
+    }
+  },
+  "colors": {
+    "theme": "light",
+    "palette": {
+      "background": "#F8FAFC",
+      "foreground": "#0F172A",
+      "card": "#FFFFFF",
+      "card_foreground": "#0F172A",
+      "primary": "#0F172A",
+      "primary_foreground": "#F8FAFC",
+      "secondary": "#E2E8F0",
+      "secondary_foreground": "#1E293B",
+      "muted": "#F1F5F9",
+      "muted_foreground": "#64748B",
+      "accent": "#F97316",
+      "accent_foreground": "#FFFFFF",
+      "destructive": "#EF4444",
+      "destructive_foreground": "#FFFFFF",
+      "border": "#E2E8F0",
+      "input": "#E2E8F0",
+      "ring": "#0F172A"
+    },
+    "status_colors": {
+      "safe": {
+        "bg": "#ECFDF5",
+        "text": "#047857",
+        "border": "#10B981"
+      },
+      "warning": {
+        "bg": "#FFFBEB",
+        "text": "#B45309",
+        "border": "#F59E0B"
+      },
+      "critical": {
+        "bg": "#FEF2F2",
+        "text": "#B91C1C",
+        "border": "#EF4444"
+      }
+    }
+  },
+  "layout": {
+    "grid_system": "Bento Grid (High Density)",
+    "container_padding": "p-4 md:p-8",
+    "gap": "gap-4",
+    "radius": "rounded-sm",
+    "spacing_scale": {
+      "section": "py-12 md:py-24",
+      "component": "p-6"
+    }
+  },
+  "components": {
+    "buttons": {
+      "primary": "bg-primary text-primary-foreground hover:bg-primary/90 h-10 px-6 rounded-sm font-medium uppercase tracking-wide transition-all shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] active:translate-y-[1px] active:shadow-none",
+      "secondary": "bg-white border-2 border-primary text-primary hover:bg-accent hover:text-white h-10 px-6 rounded-sm font-medium uppercase tracking-wide transition-colors",
+      "ghost": "hover:bg-accent/10 hover:text-accent font-medium"
+    },
+    "cards": {
+      "base": "bg-white border border-border shadow-sm p-6 rounded-sm relative overflow-hidden group",
+      "interactive": "hover:border-primary/50 transition-colors cursor-pointer",
+      "data_card": "flex flex-col gap-2 border-l-4"
+    },
+    "inputs": {
+      "base": "h-11 bg-white border-2 border-input focus:border-primary focus:ring-0 rounded-sm font-mono text-sm"
+    },
+    "status_indicators": {
+      "traffic_light": "w-3 h-3 rounded-full shadow-[0_0_8px_currentColor]"
+    }
+  },
+  "visual_enhancers": {
+    "textures": [
+      "Use subtle 'noise' or 'grain' overlays on dark backgrounds to reduce digital flatness.",
+      "Use 'scanline' effects on empty states or loading screens."
+    ],
+    "shadows": {
+      "card": "shadow-[0_1px_3px_0_rgba(0,0,0,0.1),0_1px_2px_-1px_rgba(0,0,0,0.1)]",
+      "hover": "shadow-[0_10px_15px_-3px_rgba(0,0,0,0.1),0_4px_6px_-4px_rgba(0,0,0,0.1)]",
+      "brutalist": "shadow-[4px_4px_0px_0px_rgba(15,23,42,1)]"
+    }
+  },
+  "motion": {
+    "transitions": "transition-all duration-200 ease-in-out",
+    "hover_effects": "transform hover:-translate-y-0.5",
+    "loading": "animate-pulse"
+  },
+  "assets": {
+    "images": [
+      {
+        "category": "hero",
+        "url": "https://images.unsplash.com/photo-1769144256207-bc4bb75b29db?crop=entropy&cs=srgb&fm=jpg&ixid=M3w4NjA2MjJ8MHwxfHNlYXJjaHwzfHxjb250YWluZXIlMjBzaGlwJTIwYWVyaWFsJTIwb2NlYW4lMjBsb2dpc3RpY3N8ZW58MHx8fHwxNzczMTg2MTUyfDA&ixlib=rb-4.1.0&q=85",
+        "description": "Cargo ship loaded with colorful containers at a busy port."
+      },
+      {
+        "category": "auth_bg",
+        "url": "https://images.unsplash.com/photo-1770238623857-4cee6f0bdc3b?crop=entropy&cs=srgb&fm=jpg&ixid=M3w4NTYxOTB8MHwxfHNlYXJjaHwxfHxzaGlwcGluZyUyMHBvcnQlMjBjcmFuZXMlMjBzdW5zZXQlMjBpbmR1c3RyaWFsfGVufDB8fHx8MTc3MzE4NjE1NHww&ixlib=rb-4.1.0&q=85",
+        "description": "Harbor cranes silhouetted against a vibrant sunset sky."
+      }
+    ],
+    "icons": "lucide-react (Use: Ship, Anchor, Container, Clock, AlertTriangle, CheckCircle, FileText, Settings, User)"
+  },
+  "accessibility": {
+    "rules": [
+      "Ensure text contrast ratio > 4.5:1 against backgrounds.",
+      "Do not rely on color alone for status (use icons + text labels).",
+      "Interactive elements must have visible focus states.",
+      "Support keyboard navigation for all tables and forms."
+    ]
+  },
+  "universal_guidelines": {
+    "general": [
+      "Use 'Sonner' for toasts.",
+      "Use 'Recharts' for any data visualization.",
+      "All interactive elements MUST have `data-testid` attributes.",
+      "Do not use gradients for main backgrounds, use solid colors or subtle patterns.",
+      "Ensure mobile responsiveness (stack grids on small screens)."
+    ],
+    "component_reuse": [
+      "Prioritize using /app/frontend/src/components/ui/ components.",
+      "Wrap Shadcn components to apply custom 'Tactical' styling."
+    ]
+  }
+}
