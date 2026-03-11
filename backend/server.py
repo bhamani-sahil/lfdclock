@@ -248,22 +248,34 @@ async def get_me(current_user: dict = Depends(get_current_user)):
 
 # ==================== SHIPMENT ROUTES ====================
 
-@api_router.get("/shipments", response_model=List[ShipmentResponse])
+@api_router.get("/shipments")
 async def get_shipments(current_user: dict = Depends(get_current_user)):
     shipments = await db.shipments.find(
         {"user_id": current_user["id"]}, 
         {"_id": 0}
     ).sort("last_free_day", 1).to_list(1000)
     
-    # Update status for each shipment
+    # Update status for each shipment and ensure all fields are present
+    result = []
     for shipment in shipments:
-        status, hours = calculate_shipment_status(shipment["last_free_day"])
-        shipment["status"] = status
-        shipment["hours_remaining"] = round(hours, 1)
+        status, hours = calculate_shipment_status(shipment.get("last_free_day", ""))
+        result.append({
+            "id": shipment.get("id", ""),
+            "user_id": shipment.get("user_id", ""),
+            "container_number": shipment.get("container_number", ""),
+            "vessel_name": shipment.get("vessel_name", "Unknown"),
+            "arrival_date": shipment.get("arrival_date", ""),
+            "last_free_day": shipment.get("last_free_day", ""),
+            "notes": shipment.get("notes"),
+            "status": status,
+            "hours_remaining": round(hours, 1),
+            "created_at": shipment.get("created_at", ""),
+            "source": shipment.get("source", "manual")
+        })
     
-    return shipments
+    return result
 
-@api_router.post("/shipments", response_model=ShipmentResponse)
+@api_router.post("/shipments")
 async def create_shipment(
     shipment_data: ShipmentCreate,
     current_user: dict = Depends(get_current_user)
@@ -286,6 +298,9 @@ async def create_shipment(
     }
     
     await db.shipments.insert_one(shipment_doc)
+    # Return without _id (which MongoDB adds)
+    if '_id' in shipment_doc:
+        del shipment_doc['_id']
     return shipment_doc
 
 @api_router.delete("/shipments/{shipment_id}")
@@ -400,6 +415,9 @@ async def parse_email(
         }
         
         await db.shipments.insert_one(shipment_doc)
+        # Remove _id before returning
+        if '_id' in shipment_doc:
+            del shipment_doc['_id']
         
         return {
             "message": "Email parsed successfully",
@@ -511,6 +529,9 @@ async def check_and_send_notifications(current_user: dict = Depends(get_current_
                 }
                 
                 await db.sms_logs.insert_one(sms_log)
+                # Remove _id before adding to response
+                if '_id' in sms_log:
+                    del sms_log['_id']
                 notifications_sent.append(sms_log)
     
     return {
@@ -586,6 +607,9 @@ async def seed_demo_data(current_user: dict = Depends(get_current_user)):
             }
             
             await db.shipments.insert_one(shipment_doc)
+            # Remove _id before adding to response
+            if '_id' in shipment_doc:
+                del shipment_doc['_id']
             created.append(shipment_doc)
     
     return {
