@@ -14,6 +14,7 @@ from datetime import datetime, timezone, timedelta
 import jwt
 from passlib.context import CryptContext
 import base64
+from twilio.rest import Client as TwilioClient
 
 ROOT_DIR = Path(__file__).parent
 load_dotenv(ROOT_DIR / '.env')
@@ -27,6 +28,16 @@ db = client[os.environ['DB_NAME']]
 JWT_SECRET = os.environ.get('JWT_SECRET', 'lfd-clock-secret')
 JWT_ALGORITHM = "HS256"
 JWT_EXPIRATION_HOURS = 24
+
+# Twilio Configuration
+TWILIO_ACCOUNT_SID = os.environ.get('TWILIO_ACCOUNT_SID')
+TWILIO_AUTH_TOKEN = os.environ.get('TWILIO_AUTH_TOKEN')
+TWILIO_PHONE_NUMBER = os.environ.get('TWILIO_PHONE_NUMBER')
+
+# Initialize Twilio client
+twilio_client = None
+if TWILIO_ACCOUNT_SID and TWILIO_AUTH_TOKEN:
+    twilio_client = TwilioClient(TWILIO_ACCOUNT_SID, TWILIO_AUTH_TOKEN)
 
 # Password hashing
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
@@ -98,6 +109,10 @@ class EmailParseRequest(BaseModel):
     subject: str
     body: str
     from_email: str
+
+class TestEmailSMSRequest(BaseModel):
+    email_content: str
+    phone_number: str
 
 class SMSLog(BaseModel):
     model_config = ConfigDict(extra="ignore")
@@ -626,6 +641,146 @@ async def root():
 @api_router.get("/health")
 async def health_check():
     return {"status": "healthy", "service": "lfd-clock"}
+
+# ==================== TEST EMAIL + REAL SMS ====================
+
+def send_real_sms(to_number: str, message: str) -> dict:
+    """Send a real SMS via Twilio"""
+    if not twilio_client:
+        raise HTTPException(status_code=500, detail="Twilio not configured")
+    
+    # Ensure phone number has country code
+    if not to_number.startswith('+'):
+        to_number = '+1' + to_number  # Default to US if no country code
+    
+    try:
+        sms = twilio_client.messages.create(
+            body=message,
+            from_=TWILIO_PHONE_NUMBER,
+            to=to_number
+        )
+        return {
+            "sid": sms.sid,
+            "status": sms.status,
+            "to": to_number
+        }
+    except Exception as e:
+        logger.error(f"Twilio SMS error: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"SMS failed: {str(e)}")
+
+@api_router.post("/test/email-sms")
+async def test_email_parse_and_sms(
+    request: TestEmailSMSRequest,
+    current_user: dict = Depends(get_current_user)
+):
+    """
+    TEST ENDPOINT: Parse email content with Gemini AI and send REAL SMS immediately.
+    Use this to test the full flow without email forwarding setup.
+    """
+    try:
+        from emergentintegrations.llm.chat import LlmChat, UserMessage
+        import json
+        
+        api_key = os.environ.get('EMERGENT_LLM_KEY')
+        if not api_key:
+            raise HTTPException(status_code=500, detail="LLM API key not configured")
+        
+        # Step 1: Parse with Gemini
+        chat = LlmChat(
+            api_key=api_key,
+            session_id=f"test-parse-{uuid.uuid4()}",
+            system_message="""You are a logistics document parser. Extract shipment information from the text.
+            Return ONLY a valid JSON object with these fields:
+            - container_number: string (container ID, format like ABCD1234567)
+            - vessel_name: string (name of the ship)
+            - arrival_date: string (ISO date format YYYY-MM-DDTHH:MM:SSZ, use current date if not found)
+            - last_free_day: string (ISO date format YYYY-MM-DDTHH:MM:SSZ, the LFD/Last Free Day)
+            
+            If you cannot find a specific date, estimate a reasonable one (e.g., LFD 5 days from now).
+            Return ONLY the JSON, no explanation."""
+        ).with_model("gemini", "gemini-2.5-flash")
+        
+        user_message = UserMessage(text=request.email_content)
+        response = await chat.send_message(user_message)
+        
+        # Parse JSON response
+        clean_response = response.strip()
+        if clean_response.startswith("```"):
+            clean_response = clean_response.split("```")[1]
+            if clean_response.startswith("json"):
+                clean_response = clean_response[4:]
+        clean_response = clean_response.strip()
+        
+        try:
+            parsed_data = json.loads(clean_response)
+        except json.JSONDecodeError:
+            raise HTTPException(status_code=422, detail=f"Could not parse AI response: {clean_response[:200]}")
+        
+        container = parsed_data.get("container_number", "UNKNOWN")
+        vessel = parsed_data.get("vessel_name", "Unknown Vessel")
+        lfd = parsed_data.get("last_free_day", (datetime.now(timezone.utc) + timedelta(days=5)).isoformat())
+        arrival = parsed_data.get("arrival_date", datetime.now(timezone.utc).isoformat())
+        
+        # Step 2: Create shipment
+        shipment_id = str(uuid.uuid4())
+        status, hours = calculate_shipment_status(lfd)
+        
+        shipment_doc = {
+            "id": shipment_id,
+            "user_id": current_user["id"],
+            "container_number": container.upper(),
+            "vessel_name": vessel,
+            "arrival_date": arrival,
+            "last_free_day": lfd,
+            "notes": "Created via Test Email Parse",
+            "status": status,
+            "hours_remaining": round(hours, 1),
+            "created_at": datetime.now(timezone.utc).isoformat(),
+            "source": "test_email"
+        }
+        
+        await db.shipments.insert_one(shipment_doc)
+        if '_id' in shipment_doc:
+            del shipment_doc['_id']
+        
+        # Step 3: Send REAL SMS
+        sms_message = f"LFD Clock Alert: New shipment detected!\n\nContainer: {container}\nVessel: {vessel}\nLFD: {lfd[:10]}\nStatus: {status.upper()}\nTime remaining: {round(hours, 1)}h"
+        
+        sms_result = send_real_sms(request.phone_number, sms_message)
+        
+        # Log the SMS
+        sms_log = {
+            "id": str(uuid.uuid4()),
+            "user_id": current_user["id"],
+            "shipment_id": shipment_id,
+            "container_number": container,
+            "message": sms_message,
+            "notification_type": "test_immediate",
+            "sent_at": datetime.now(timezone.utc).isoformat(),
+            "status": "sent_real",
+            "twilio_sid": sms_result.get("sid")
+        }
+        await db.sms_logs.insert_one(sms_log)
+        if '_id' in sms_log:
+            del sms_log['_id']
+        
+        return {
+            "success": True,
+            "message": "Email parsed and SMS sent successfully!",
+            "parsed_data": parsed_data,
+            "shipment": shipment_doc,
+            "sms": {
+                "sent_to": sms_result.get("to"),
+                "twilio_sid": sms_result.get("sid"),
+                "status": sms_result.get("status")
+            }
+        }
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Test email-SMS error: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Test failed: {str(e)}")
 
 # Include the router in the main app
 app.include_router(api_router)

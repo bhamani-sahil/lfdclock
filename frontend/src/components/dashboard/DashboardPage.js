@@ -3,16 +3,18 @@ import { useAuth } from '@/context/AuthContext';
 import { useNavigate, Link, useLocation } from 'react-router-dom';
 import axios from 'axios';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
+import { Textarea } from '@/components/ui/textarea';
 import {
   Dialog,
   DialogContent,
   DialogHeader,
   DialogTitle,
   DialogTrigger,
+  DialogDescription,
 } from '@/components/ui/dialog';
 import {
   DropdownMenu,
@@ -41,7 +43,10 @@ import {
   Clock,
   Package,
   Loader2,
-  Sparkles
+  Sparkles,
+  Smartphone,
+  Send,
+  Zap
 } from 'lucide-react';
 
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
@@ -190,6 +195,7 @@ export const DashboardPage = () => {
                 <p className="text-muted-foreground">Track your container Last Free Days</p>
               </div>
               <div className="flex gap-3">
+                <TestEmailSMSDialog token={token} onSuccess={fetchData} />
                 <Button
                   variant="outline"
                   onClick={seedDemoData}
@@ -486,6 +492,160 @@ const AddShipmentDialog = ({ open, onOpenChange, token, onSuccess }) => {
               data-testid="add-shipment-submit-btn"
             >
               {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Add Shipment'}
+            </Button>
+          </div>
+        </form>
+      </DialogContent>
+    </Dialog>
+  );
+};
+
+const TestEmailSMSDialog = ({ token, onSuccess }) => {
+  const [open, setOpen] = useState(false);
+  const [emailContent, setEmailContent] = useState('');
+  const [phoneNumber, setPhoneNumber] = useState('');
+  const [loading, setLoading] = useState(false);
+  const [result, setResult] = useState(null);
+
+  const sampleEmail = `Subject: Arrival Notice - Container MSCU1234567
+
+Dear Customer,
+
+Your shipment has arrived at the Port of Los Angeles.
+
+Container Number: MSCU1234567
+Vessel: MSC AURORA
+Arrival Date: March 10, 2026
+Last Free Day (LFD): March 15, 2026
+
+Please arrange pickup before the LFD to avoid demurrage charges.
+
+Best regards,
+Shipping Line`;
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    setLoading(true);
+    setResult(null);
+
+    try {
+      const response = await axios.post(
+        `${API}/test/email-sms`,
+        {
+          email_content: emailContent,
+          phone_number: phoneNumber
+        },
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+      
+      setResult(response.data);
+      toast.success('SMS sent successfully! Check your phone!');
+      onSuccess();
+    } catch (error) {
+      toast.error(error.response?.data?.detail || 'Test failed');
+      setResult({ error: error.response?.data?.detail || 'Test failed' });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <Dialog open={open} onOpenChange={setOpen}>
+      <DialogTrigger asChild>
+        <Button variant="outline" className="bg-emerald-50 border-emerald-200 text-emerald-700 hover:bg-emerald-100" data-testid="test-sms-btn">
+          <Zap className="w-4 h-4 mr-2" />
+          Test SMS
+        </Button>
+      </DialogTrigger>
+      <DialogContent className="sm:max-w-lg">
+        <DialogHeader>
+          <DialogTitle className="flex items-center gap-2">
+            <Smartphone className="w-5 h-5 text-emerald-600" />
+            Test Email Parse + Real SMS
+          </DialogTitle>
+          <DialogDescription>
+            Paste email content, we'll parse it with AI and send you a REAL SMS!
+          </DialogDescription>
+        </DialogHeader>
+        <form onSubmit={handleSubmit} className="space-y-4">
+          <div className="space-y-2">
+            <Label htmlFor="phone">Your Phone Number (with country code)</Label>
+            <Input
+              id="phone"
+              placeholder="+18257607425"
+              value={phoneNumber}
+              onChange={(e) => setPhoneNumber(e.target.value)}
+              required
+              data-testid="test-phone-input"
+              className="font-mono"
+            />
+            <p className="text-xs text-muted-foreground">Include country code (e.g., +1 for US, +91 for India)</p>
+          </div>
+          <div className="space-y-2">
+            <div className="flex items-center justify-between">
+              <Label htmlFor="email_content">Email Content</Label>
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                onClick={() => setEmailContent(sampleEmail)}
+                className="text-xs"
+              >
+                Load Sample
+              </Button>
+            </div>
+            <Textarea
+              id="email_content"
+              placeholder="Paste your shipment email content here..."
+              value={emailContent}
+              onChange={(e) => setEmailContent(e.target.value)}
+              required
+              rows={8}
+              data-testid="test-email-input"
+              className="font-mono text-sm"
+            />
+          </div>
+          
+          {result && (
+            <div className={`p-4 rounded-sm text-sm ${result.error ? 'bg-red-50 border border-red-200' : 'bg-emerald-50 border border-emerald-200'}`}>
+              {result.error ? (
+                <p className="text-red-700">{result.error}</p>
+              ) : (
+                <div className="space-y-2">
+                  <p className="text-emerald-700 font-medium flex items-center gap-2">
+                    <Check className="w-4 h-4" /> SMS Sent Successfully!
+                  </p>
+                  <p className="text-emerald-600">Container: {result.parsed_data?.container_number}</p>
+                  <p className="text-emerald-600">Sent to: {result.sms?.sent_to}</p>
+                  <p className="text-emerald-600 text-xs">Twilio SID: {result.sms?.twilio_sid}</p>
+                </div>
+              )}
+            </div>
+          )}
+
+          <div className="flex gap-3 pt-2">
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => setOpen(false)}
+              className="flex-1"
+            >
+              Cancel
+            </Button>
+            <Button
+              type="submit"
+              disabled={loading}
+              className="flex-1 bg-emerald-600 hover:bg-emerald-700"
+              data-testid="test-sms-submit-btn"
+            >
+              {loading ? (
+                <Loader2 className="w-4 h-4 animate-spin" />
+              ) : (
+                <>
+                  <Send className="w-4 h-4 mr-2" />
+                  Parse & Send SMS
+                </>
+              )}
             </Button>
           </div>
         </form>
