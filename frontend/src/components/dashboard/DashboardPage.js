@@ -607,17 +607,24 @@ Shipping Line`;
           </div>
           
           {result && (
-            <div className={`p-4 rounded-sm text-sm ${result.error ? 'bg-red-50 border border-red-200' : 'bg-emerald-50 border border-emerald-200'}`}>
+            <div className={`p-4 rounded-sm text-sm ${result.error ? 'bg-red-50 border border-red-200' : result.action === 'updated' ? 'bg-amber-50 border border-amber-200' : 'bg-emerald-50 border border-emerald-200'}`}>
               {result.error ? (
                 <p className="text-red-700">{result.error}</p>
               ) : (
                 <div className="space-y-2">
-                  <p className="text-emerald-700 font-medium flex items-center gap-2">
-                    <Check className="w-4 h-4" /> SMS Sent Successfully!
+                  <p className={`font-medium flex items-center gap-2 ${result.action === 'updated' ? 'text-amber-700' : 'text-emerald-700'}`}>
+                    <Check className="w-4 h-4" /> 
+                    {result.action === 'updated' ? 'Shipment UPDATED & SMS Sent!' : 'New Shipment Created & SMS Sent!'}
                   </p>
-                  <p className="text-emerald-600">Container: {result.parsed_data?.container_number}</p>
-                  <p className="text-emerald-600">Sent to: {result.sms?.sent_to}</p>
-                  <p className="text-emerald-600 text-xs">Twilio SID: {result.sms?.twilio_sid}</p>
+                  <p className={result.action === 'updated' ? 'text-amber-600' : 'text-emerald-600'}>
+                    Container: {result.parsed_data?.container_number}
+                  </p>
+                  <p className={result.action === 'updated' ? 'text-amber-600' : 'text-emerald-600'}>
+                    LFD: {result.parsed_data?.last_free_day?.substring(0, 10)}
+                  </p>
+                  <p className={result.action === 'updated' ? 'text-amber-600' : 'text-emerald-600'}>
+                    Sent to: {result.sms?.sent_to}
+                  </p>
                 </div>
               )}
             </div>

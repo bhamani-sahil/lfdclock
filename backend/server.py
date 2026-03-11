@@ -691,12 +691,13 @@ async def test_email_parse_and_sms(
             session_id=f"test-parse-{uuid.uuid4()}",
             system_message="""You are a logistics document parser. Extract shipment information from the text.
             Return ONLY a valid JSON object with these fields:
-            - container_number: string (container ID, format like ABCD1234567)
+            - container_number: string (container ID, format like ABCD1234567 or MEDU4588210)
             - vessel_name: string (name of the ship)
-            - arrival_date: string (ISO date format YYYY-MM-DDTHH:MM:SSZ, use current date if not found)
+            - arrival_date: string (ISO date format YYYY-MM-DDTHH:MM:SSZ)
             - last_free_day: string (ISO date format YYYY-MM-DDTHH:MM:SSZ, the LFD/Last Free Day)
+            - bill_of_lading: string (B/L number if found, null otherwise)
             
-            If you cannot find a specific date, estimate a reasonable one (e.g., LFD 5 days from now).
+            Parse dates carefully. For example "March 17, 2026" should become "2026-03-17T00:00:00Z".
             Return ONLY the JSON, no explanation."""
         ).with_model("gemini", "gemini-2.5-flash")
         
@@ -716,35 +717,84 @@ async def test_email_parse_and_sms(
         except json.JSONDecodeError:
             raise HTTPException(status_code=422, detail=f"Could not parse AI response: {clean_response[:200]}")
         
-        container = parsed_data.get("container_number", "UNKNOWN")
+        container = parsed_data.get("container_number", "UNKNOWN").upper()
         vessel = parsed_data.get("vessel_name", "Unknown Vessel")
         lfd = parsed_data.get("last_free_day", (datetime.now(timezone.utc) + timedelta(days=5)).isoformat())
         arrival = parsed_data.get("arrival_date", datetime.now(timezone.utc).isoformat())
+        bol = parsed_data.get("bill_of_lading")
         
-        # Step 2: Create shipment
-        shipment_id = str(uuid.uuid4())
         status, hours = calculate_shipment_status(lfd)
         
-        shipment_doc = {
-            "id": shipment_id,
+        # Step 2: Check if container already exists for this user (UPSERT logic)
+        existing_shipment = await db.shipments.find_one({
             "user_id": current_user["id"],
-            "container_number": container.upper(),
-            "vessel_name": vessel,
-            "arrival_date": arrival,
-            "last_free_day": lfd,
-            "notes": "Created via Test Email Parse",
-            "status": status,
-            "hours_remaining": round(hours, 1),
-            "created_at": datetime.now(timezone.utc).isoformat(),
-            "source": "test_email"
-        }
+            "container_number": container
+        })
         
-        await db.shipments.insert_one(shipment_doc)
-        if '_id' in shipment_doc:
-            del shipment_doc['_id']
+        is_update = False
+        old_lfd = None
         
-        # Step 3: Send REAL SMS
-        sms_message = f"LFD Clock Alert: New shipment detected!\n\nContainer: {container}\nVessel: {vessel}\nLFD: {lfd[:10]}\nStatus: {status.upper()}\nTime remaining: {round(hours, 1)}h"
+        if existing_shipment:
+            # UPDATE existing shipment
+            is_update = True
+            old_lfd = existing_shipment.get("last_free_day", "")[:10]
+            shipment_id = existing_shipment["id"]
+            
+            await db.shipments.update_one(
+                {"id": shipment_id},
+                {"$set": {
+                    "vessel_name": vessel,
+                    "arrival_date": arrival,
+                    "last_free_day": lfd,
+                    "bill_of_lading": bol,
+                    "status": status,
+                    "hours_remaining": round(hours, 1),
+                    "updated_at": datetime.now(timezone.utc).isoformat(),
+                    "notes": f"Updated via email parse on {datetime.now(timezone.utc).strftime('%Y-%m-%d %H:%M')} UTC"
+                }}
+            )
+            
+            shipment_doc = {
+                "id": shipment_id,
+                "user_id": current_user["id"],
+                "container_number": container,
+                "vessel_name": vessel,
+                "arrival_date": arrival,
+                "last_free_day": lfd,
+                "bill_of_lading": bol,
+                "status": status,
+                "hours_remaining": round(hours, 1),
+                "updated_at": datetime.now(timezone.utc).isoformat(),
+                "source": "test_email"
+            }
+        else:
+            # CREATE new shipment
+            shipment_id = str(uuid.uuid4())
+            
+            shipment_doc = {
+                "id": shipment_id,
+                "user_id": current_user["id"],
+                "container_number": container,
+                "vessel_name": vessel,
+                "arrival_date": arrival,
+                "last_free_day": lfd,
+                "bill_of_lading": bol,
+                "notes": "Created via Test Email Parse",
+                "status": status,
+                "hours_remaining": round(hours, 1),
+                "created_at": datetime.now(timezone.utc).isoformat(),
+                "source": "test_email"
+            }
+            
+            await db.shipments.insert_one(shipment_doc)
+            if '_id' in shipment_doc:
+                del shipment_doc['_id']
+        
+        # Step 3: Send REAL SMS with appropriate message
+        if is_update:
+            sms_message = f"LFD Clock: SHIPMENT UPDATED!\n\nContainer: {container}\nVessel: {vessel}\nOld LFD: {old_lfd}\nNEW LFD: {lfd[:10]}\nStatus: {status.upper()}\nTime remaining: {round(hours, 1)}h"
+        else:
+            sms_message = f"LFD Clock: New shipment!\n\nContainer: {container}\nVessel: {vessel}\nLFD: {lfd[:10]}\nStatus: {status.upper()}\nTime remaining: {round(hours, 1)}h"
         
         sms_result = send_real_sms(request.phone_number, sms_message)
         
@@ -755,7 +805,7 @@ async def test_email_parse_and_sms(
             "shipment_id": shipment_id,
             "container_number": container,
             "message": sms_message,
-            "notification_type": "test_immediate",
+            "notification_type": "update" if is_update else "new",
             "sent_at": datetime.now(timezone.utc).isoformat(),
             "status": "sent_real",
             "twilio_sid": sms_result.get("sid")
@@ -766,7 +816,8 @@ async def test_email_parse_and_sms(
         
         return {
             "success": True,
-            "message": "Email parsed and SMS sent successfully!",
+            "action": "updated" if is_update else "created",
+            "message": f"Shipment {'UPDATED' if is_update else 'created'} and SMS sent!",
             "parsed_data": parsed_data,
             "shipment": shipment_doc,
             "sms": {
