@@ -88,9 +88,9 @@ export const DashboardPage = () => {
   };
 
   const copyEmail = () => {
-    navigator.clipboard.writeText(user?.forwarding_email || '');
+    navigator.clipboard.writeText(user?.inbound_email || user?.forwarding_email || '');
     setCopied(true);
-    toast.success('Email copied!');
+    toast.success('Inbound email copied!');
     setTimeout(() => setCopied(false), 2000);
   };
 
@@ -136,19 +136,19 @@ export const DashboardPage = () => {
             </Link>
 
             <div className="flex items-center gap-4">
-              {/* Forwarding Email */}
-              <div className="hidden md:flex items-center gap-2 bg-slate-100 px-3 py-1.5 rounded-sm">
-                <Mail className="w-4 h-4 text-muted-foreground" />
-                <code className="text-sm font-mono">{user?.forwarding_email}</code>
+              {/* Inbound Email */}
+              <div className="hidden md:flex items-center gap-2 bg-emerald-50 border border-emerald-200 px-3 py-1.5 rounded-sm">
+                <Mail className="w-4 h-4 text-emerald-600" />
+                <code className="text-sm font-mono text-emerald-700">{user?.inbound_email || user?.forwarding_email}</code>
                 <button
                   onClick={copyEmail}
-                  className="p-1 hover:bg-slate-200 rounded-sm transition-colors"
+                  className="p-1 hover:bg-emerald-100 rounded-sm transition-colors"
                   data-testid="copy-fwd-email-btn"
                 >
                   {copied ? (
                     <Check className="w-3.5 h-3.5 text-emerald-500" />
                   ) : (
-                    <Copy className="w-3.5 h-3.5 text-muted-foreground" />
+                    <Copy className="w-3.5 h-3.5 text-emerald-600" />
                   )}
                 </button>
               </div>

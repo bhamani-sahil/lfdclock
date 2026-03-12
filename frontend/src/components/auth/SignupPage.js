@@ -26,7 +26,7 @@ export const SignupPage = () => {
 
     try {
       const user = await signup(email, password, companyName, phone);
-      setForwardingEmail(user.forwarding_email);
+      setForwardingEmail(user.inbound_email || user.forwarding_email);
       setShowOnboarding(true);
       toast.success('Account created successfully!');
     } catch (error) {
@@ -39,7 +39,7 @@ export const SignupPage = () => {
   const copyEmail = () => {
     navigator.clipboard.writeText(forwardingEmail);
     setCopied(true);
-    toast.success('Email copied to clipboard!');
+    toast.success('Inbound email copied!');
     setTimeout(() => setCopied(false), 2000);
   };
 
@@ -57,43 +57,43 @@ export const SignupPage = () => {
               You're All Set!
             </CardTitle>
             <CardDescription className="text-base">
-              Your unique forwarding email is ready
+              Your unique inbound email is ready
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-6">
-            <div className="bg-slate-100 border-2 border-slate-200 rounded-sm p-4">
+            <div className="bg-emerald-50 border-2 border-emerald-200 rounded-sm p-4">
               <div className="flex items-center gap-2 mb-2">
-                <Mail className="w-4 h-4 text-muted-foreground" />
-                <span className="text-sm font-medium text-muted-foreground">
-                  Your Forwarding Email
+                <Mail className="w-4 h-4 text-emerald-600" />
+                <span className="text-sm font-medium text-emerald-700">
+                  Your Inbound Email
                 </span>
               </div>
               <div className="flex items-center gap-2">
-                <code className="flex-1 font-mono text-lg bg-white px-3 py-2 rounded-sm border border-slate-200">
+                <code className="flex-1 font-mono text-lg bg-white px-3 py-2 rounded-sm border border-emerald-200 text-emerald-800">
                   {forwardingEmail}
                 </code>
                 <Button
                   variant="outline"
                   size="icon"
                   onClick={copyEmail}
-                  className="shrink-0"
+                  className="shrink-0 border-emerald-300 hover:bg-emerald-100"
                   data-testid="copy-email-btn"
                 >
                   {copied ? (
                     <Check className="w-4 h-4 text-emerald-500" />
                   ) : (
-                    <Copy className="w-4 h-4" />
+                    <Copy className="w-4 h-4 text-emerald-600" />
                   )}
                 </Button>
               </div>
             </div>
 
-            <div className="bg-amber-50 border border-amber-200 rounded-sm p-4">
-              <h4 className="font-medium text-amber-800 mb-2">How to use</h4>
-              <ol className="text-sm text-amber-700 space-y-2 list-decimal list-inside">
-                <li>Forward your freight notifications to this email</li>
-                <li>We'll automatically extract LFD data from attachments</li>
-                <li>Get SMS alerts before your containers expire</li>
+            <div className="bg-slate-50 border border-slate-200 rounded-sm p-4">
+              <h4 className="font-medium text-slate-800 mb-2">How carriers send you LFD notices:</h4>
+              <ol className="text-sm text-slate-600 space-y-2 list-decimal list-inside">
+                <li>Give this email to your shipping lines & forwarders</li>
+                <li>They email PDF arrival notices to this address</li>
+                <li>We parse the LFD and send you instant SMS alerts</li>
               </ol>
             </div>
 

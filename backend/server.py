@@ -114,6 +114,24 @@ class TestEmailSMSRequest(BaseModel):
     email_content: str
     phone_number: str
 
+class PostmarkAttachment(BaseModel):
+    Name: str
+    Content: str  # Base64 encoded
+    ContentType: str
+    ContentLength: Optional[int] = None
+
+class PostmarkInboundPayload(BaseModel):
+    From: Optional[str] = None
+    FromName: Optional[str] = None
+    To: Optional[str] = None
+    Subject: Optional[str] = None
+    TextBody: Optional[str] = None
+    HtmlBody: Optional[str] = None
+    Attachments: Optional[List[PostmarkAttachment]] = []
+    
+    class Config:
+        extra = "allow"  # Allow extra fields from Postmark
+
 class SMSLog(BaseModel):
     model_config = ConfigDict(extra="ignore")
     id: str
@@ -127,8 +145,20 @@ class SMSLog(BaseModel):
 
 # ==================== HELPERS ====================
 
+def generate_inbound_email(company_name: str) -> str:
+    """Generate unique inbound email for customer: company-name@inbound.lfdclock.com"""
+    # Clean company name: lowercase, replace spaces with hyphens, remove special chars
+    import re
+    clean_name = company_name.lower().strip()
+    clean_name = re.sub(r'[^a-z0-9\s-]', '', clean_name)
+    clean_name = re.sub(r'[\s]+', '-', clean_name)
+    clean_name = re.sub(r'-+', '-', clean_name)
+    # Add random suffix to ensure uniqueness
+    suffix = hashlib.md5(f"{company_name}{datetime.now().isoformat()}".encode()).hexdigest()[:4]
+    return f"{clean_name}-{suffix}@inbound.lfdclock.com"
+
 def generate_forwarding_email(user_id: str) -> str:
-    """Generate unique forwarding email for user"""
+    """Generate unique forwarding email for user (legacy)"""
     short_id = hashlib.md5(user_id.encode()).hexdigest()[:8]
     return f"fwd-{short_id}@lfdclock.com"
 
@@ -194,6 +224,10 @@ async def signup(user_data: UserCreate):
     
     user_id = str(uuid.uuid4())
     forwarding_email = generate_forwarding_email(user_id)
+    inbound_email = generate_inbound_email(user_data.company_name)
+    
+    # Extract email prefix for lookup
+    inbound_prefix = inbound_email.split('@')[0]
     
     user_doc = {
         "id": user_id,
@@ -202,6 +236,8 @@ async def signup(user_data: UserCreate):
         "company_name": user_data.company_name,
         "phone": user_data.phone,
         "forwarding_email": forwarding_email,
+        "inbound_email": inbound_email,
+        "inbound_prefix": inbound_prefix,
         "created_at": datetime.now(timezone.utc).isoformat(),
         "notification_settings": {
             "notify_48h": True,
@@ -223,6 +259,7 @@ async def signup(user_data: UserCreate):
             "company_name": user_data.company_name,
             "phone": user_data.phone,
             "forwarding_email": forwarding_email,
+            "inbound_email": inbound_email,
             "created_at": user_doc["created_at"]
         }
     }
@@ -245,7 +282,8 @@ async def login(credentials: UserLogin):
             "email": user["email"],
             "company_name": user["company_name"],
             "phone": user.get("phone"),
-            "forwarding_email": user["forwarding_email"],
+            "forwarding_email": user.get("forwarding_email"),
+            "inbound_email": user.get("inbound_email"),
             "created_at": user["created_at"]
         }
     }
@@ -257,7 +295,8 @@ async def get_me(current_user: dict = Depends(get_current_user)):
         "email": current_user["email"],
         "company_name": current_user["company_name"],
         "phone": current_user.get("phone"),
-        "forwarding_email": current_user["forwarding_email"],
+        "forwarding_email": current_user.get("forwarding_email"),
+        "inbound_email": current_user.get("inbound_email"),
         "created_at": current_user["created_at"]
     }
 
@@ -633,6 +672,283 @@ async def seed_demo_data(current_user: dict = Depends(get_current_user)):
     }
 
 # ==================== HEALTH CHECK ====================
+
+# ==================== POSTMARK INBOUND WEBHOOK ====================
+
+@api_router.post("/inbound-lfd")
+async def postmark_inbound_webhook(payload: PostmarkInboundPayload):
+    """
+    Postmark Inbound Webhook: Receives emails sent to [customer]@inbound.lfdclock.com
+    Parses PDF attachments with Gemini, upserts shipments, sends SMS alerts.
+    """
+    import tempfile
+    import os as os_module
+    
+    try:
+        logger.info(f"Postmark webhook received: To={payload.To}, From={payload.From}, Subject={payload.Subject}")
+        
+        # Step 1: Extract customer from email address (prefix before @inbound.lfdclock.com)
+        to_email = payload.To or ""
+        if "@inbound.lfdclock.com" not in to_email.lower():
+            logger.warning(f"Invalid inbound email: {to_email}")
+            return {"status": "ignored", "reason": "Not an inbound.lfdclock.com address"}
+        
+        inbound_prefix = to_email.split('@')[0].lower()
+        
+        # Step 2: Look up customer by inbound_prefix
+        customer = await db.users.find_one({"inbound_prefix": inbound_prefix}, {"_id": 0})
+        if not customer:
+            logger.warning(f"No customer found for inbound prefix: {inbound_prefix}")
+            return {"status": "error", "reason": f"No customer found for {inbound_prefix}"}
+        
+        customer_phone = customer.get("phone")
+        if not customer_phone:
+            logger.warning(f"Customer {inbound_prefix} has no phone number")
+            return {"status": "error", "reason": "Customer has no phone number for SMS"}
+        
+        # Step 3: Process attachments (look for PDFs)
+        attachments = payload.Attachments or []
+        pdf_attachments = [a for a in attachments if a.ContentType == "application/pdf" or a.Name.lower().endswith('.pdf')]
+        
+        if not pdf_attachments:
+            # No PDF? Try parsing the email body instead
+            logger.info("No PDF attachments, attempting to parse email body")
+            text_content = payload.TextBody or payload.HtmlBody or ""
+            if not text_content:
+                return {"status": "error", "reason": "No PDF attachment and no email body to parse"}
+            
+            # Parse text content
+            result = await parse_and_process_shipment(
+                content=text_content,
+                content_type="text",
+                customer=customer,
+                source="email_body"
+            )
+            return result
+        
+        # Step 4: Process each PDF attachment
+        results = []
+        for attachment in pdf_attachments:
+            try:
+                # Decode base64 PDF
+                pdf_bytes = base64.b64decode(attachment.Content)
+                
+                # Save to temp file
+                with tempfile.NamedTemporaryFile(suffix='.pdf', delete=False) as tmp_file:
+                    tmp_file.write(pdf_bytes)
+                    tmp_path = tmp_file.name
+                
+                try:
+                    # Parse PDF with Gemini
+                    result = await parse_and_process_shipment(
+                        content=tmp_path,
+                        content_type="pdf",
+                        customer=customer,
+                        source="pdf_attachment",
+                        filename=attachment.Name
+                    )
+                    results.append(result)
+                finally:
+                    # Clean up temp file
+                    if os_module.path.exists(tmp_path):
+                        os_module.unlink(tmp_path)
+                        
+            except Exception as e:
+                logger.error(f"Error processing attachment {attachment.Name}: {str(e)}")
+                results.append({"status": "error", "filename": attachment.Name, "error": str(e)})
+        
+        return {
+            "status": "processed",
+            "customer": inbound_prefix,
+            "attachments_processed": len(results),
+            "results": results
+        }
+        
+    except Exception as e:
+        logger.error(f"Postmark webhook error: {str(e)}")
+        return {"status": "error", "detail": str(e)}
+
+
+async def parse_and_process_shipment(content: str, content_type: str, customer: dict, source: str, filename: str = None):
+    """
+    Parse content (PDF path or text) with Gemini and upsert shipment.
+    Sends SMS alert based on new/update status.
+    """
+    from emergentintegrations.llm.chat import LlmChat, UserMessage, FileContentWithMimeType
+    import json
+    
+    api_key = os.environ.get('EMERGENT_LLM_KEY')
+    if not api_key:
+        return {"status": "error", "reason": "LLM API key not configured"}
+    
+    try:
+        # Create Gemini chat
+        chat = LlmChat(
+            api_key=api_key,
+            session_id=f"inbound-parse-{uuid.uuid4()}",
+            system_message="""You are a logistics document parser specializing in shipping/freight documents.
+Extract the following information and return ONLY valid JSON:
+{
+    "container_id": "string (4 letters + 7 digits, e.g., MEDU4588210)",
+    "lfd": "string (Last Free Day in YYYY-MM-DD format)",
+    "carrier": "string (shipping line/carrier name)",
+    "vessel": "string (vessel name if found)",
+    "arrival_date": "string (arrival/ETA date in YYYY-MM-DD format if found)",
+    "status": "string ('new' or 'update' based on context clues like 'revised', 'updated', 'amended')"
+}
+If a field cannot be found, use null. Return ONLY the JSON, no explanation."""
+        ).with_model("gemini", "gemini-2.5-flash")
+        
+        # Create message based on content type
+        if content_type == "pdf":
+            # Use file attachment for PDF
+            pdf_file = FileContentWithMimeType(
+                file_path=content,
+                mime_type="application/pdf"
+            )
+            user_message = UserMessage(
+                text="Extract shipment information from this PDF document.",
+                file_contents=[pdf_file]
+            )
+        else:
+            # Plain text
+            user_message = UserMessage(text=f"Extract shipment information from this email:\n\n{content}")
+        
+        # Send to Gemini
+        response = await chat.send_message(user_message)
+        
+        # Parse JSON response
+        clean_response = response.strip()
+        if clean_response.startswith("```"):
+            parts = clean_response.split("```")
+            if len(parts) > 1:
+                clean_response = parts[1]
+                if clean_response.startswith("json"):
+                    clean_response = clean_response[4:]
+        clean_response = clean_response.strip()
+        
+        try:
+            parsed_data = json.loads(clean_response)
+        except json.JSONDecodeError as e:
+            logger.error(f"JSON parse error: {e}, response: {clean_response[:200]}")
+            return {"status": "error", "reason": f"Could not parse AI response"}
+        
+        container_id = parsed_data.get("container_id", "").upper() if parsed_data.get("container_id") else None
+        lfd = parsed_data.get("lfd")
+        carrier = parsed_data.get("carrier", "Unknown Carrier")
+        vessel = parsed_data.get("vessel", "Unknown Vessel")
+        arrival_date = parsed_data.get("arrival_date")
+        doc_status = parsed_data.get("status", "new")
+        
+        if not container_id or not lfd:
+            return {"status": "error", "reason": "Could not extract container ID or LFD from document"}
+        
+        # Convert LFD to ISO format if needed
+        if lfd and len(lfd) == 10:  # YYYY-MM-DD format
+            lfd = f"{lfd}T00:00:00Z"
+        
+        # Calculate shipment status
+        status, hours = calculate_shipment_status(lfd)
+        
+        # Step: Check if container already exists (UPSERT)
+        existing_shipment = await db.shipments.find_one({
+            "user_id": customer["id"],
+            "container_number": container_id
+        })
+        
+        is_update = False
+        old_lfd = None
+        
+        if existing_shipment:
+            # UPDATE existing shipment
+            is_update = True
+            old_lfd = existing_shipment.get("last_free_day", "")[:10] if existing_shipment.get("last_free_day") else "Unknown"
+            shipment_id = existing_shipment["id"]
+            
+            await db.shipments.update_one(
+                {"id": shipment_id},
+                {"$set": {
+                    "carrier": carrier,
+                    "vessel_name": vessel,
+                    "arrival_date": arrival_date,
+                    "last_free_day": lfd,
+                    "status": status,
+                    "hours_remaining": round(hours, 1),
+                    "updated_at": datetime.now(timezone.utc).isoformat(),
+                    "notes": f"Updated from {source} on {datetime.now(timezone.utc).strftime('%Y-%m-%d %H:%M')} UTC"
+                }}
+            )
+        else:
+            # CREATE new shipment
+            shipment_id = str(uuid.uuid4())
+            
+            shipment_doc = {
+                "id": shipment_id,
+                "user_id": customer["id"],
+                "container_number": container_id,
+                "carrier": carrier,
+                "vessel_name": vessel,
+                "arrival_date": arrival_date,
+                "last_free_day": lfd,
+                "status": status,
+                "hours_remaining": round(hours, 1),
+                "created_at": datetime.now(timezone.utc).isoformat(),
+                "source": source
+            }
+            
+            await db.shipments.insert_one(shipment_doc)
+        
+        # Step: Send SMS Alert
+        customer_phone = customer.get("phone")
+        if customer_phone:
+            if is_update and old_lfd != lfd[:10]:
+                # LFD changed - send delay alert
+                sms_message = f"DELAY ALERT: Container {container_id} at {carrier} has a NEW Last Free Day of {lfd[:10]} (was {old_lfd}). Don't get hit with demurrage!"
+            elif is_update:
+                # Update but same LFD
+                sms_message = f"LFD Confirmed: Container {container_id} at {carrier} - LFD remains {lfd[:10]}. {round(hours, 1)}h remaining."
+            else:
+                # New shipment
+                sms_message = f"LFD Alert: Container {container_id} at {carrier} has a Last Free Day of {lfd[:10]}. Initial tracking active! Don't get hit with demurrage!"
+            
+            try:
+                sms_result = send_real_sms(customer_phone, sms_message)
+                
+                # Log SMS
+                sms_log = {
+                    "id": str(uuid.uuid4()),
+                    "user_id": customer["id"],
+                    "shipment_id": shipment_id,
+                    "container_number": container_id,
+                    "message": sms_message,
+                    "notification_type": "delay_alert" if is_update else "initial_tracking",
+                    "sent_at": datetime.now(timezone.utc).isoformat(),
+                    "status": "sent_real",
+                    "twilio_sid": sms_result.get("sid")
+                }
+                await db.sms_logs.insert_one(sms_log)
+                
+            except Exception as e:
+                logger.error(f"SMS send error: {str(e)}")
+                sms_result = {"error": str(e)}
+        else:
+            sms_result = {"skipped": "No phone number"}
+        
+        return {
+            "status": "success",
+            "action": "updated" if is_update else "created",
+            "container_id": container_id,
+            "lfd": lfd[:10],
+            "carrier": carrier,
+            "old_lfd": old_lfd if is_update else None,
+            "sms_sent": "error" not in sms_result and "skipped" not in sms_result,
+            "filename": filename
+        }
+        
+    except Exception as e:
+        logger.error(f"Parse and process error: {str(e)}")
+        return {"status": "error", "reason": str(e)}
+
 
 @api_router.get("/")
 async def root():
