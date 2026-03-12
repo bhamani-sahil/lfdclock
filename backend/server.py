@@ -703,8 +703,7 @@ async def postmark_inbound_webhook(payload: PostmarkInboundPayload):
         
         customer_phone = customer.get("phone")
         if not customer_phone:
-            logger.warning(f"Customer {inbound_prefix} has no phone number")
-            return {"status": "error", "reason": "Customer has no phone number for SMS"}
+            logger.warning(f"Customer {inbound_prefix} has no phone number - will process but skip SMS")
         
         # Step 3: Process attachments (look for PDFs)
         attachments = payload.Attachments or []
