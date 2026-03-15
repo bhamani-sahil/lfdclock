@@ -29,6 +29,11 @@ export const TrafficLight = ({ status, size = 'md', showLabel = true, className 
       glowColor: 'text-slate-400',
       label: 'Expired'
     },
+    picked_up: {
+      color: 'bg-emerald-500',
+      glowColor: 'text-emerald-500',
+      label: 'Picked Up'
+    },
     unknown: {
       color: 'bg-slate-300',
       glowColor: 'text-slate-300',
@@ -66,6 +71,7 @@ export const StatusBadge = ({ status, children, className }) => {
     warning: 'status-warning',
     critical: 'status-critical',
     expired: 'bg-slate-100 text-slate-600 border-slate-300',
+    picked_up: 'bg-emerald-100 text-emerald-700 border-emerald-300',
     unknown: 'bg-slate-100 text-slate-500 border-slate-200'
   };
 

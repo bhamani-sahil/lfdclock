@@ -317,7 +317,8 @@ const ShipmentCard = ({ shipment, token, onDelete, onUpdate }) => {
     safe: 'border-l-emerald-500',
     warning: 'border-l-amber-500',
     critical: 'border-l-red-500',
-    expired: 'border-l-slate-400'
+    expired: 'border-l-slate-400',
+    picked_up: 'border-l-emerald-500'
   };
 
   const handleShareWithTrucker = async () => {

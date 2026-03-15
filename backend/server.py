@@ -396,19 +396,29 @@ async def get_shipments(current_user: dict = Depends(get_current_user)):
     # Update status for each shipment and ensure all fields are present
     result = []
     for shipment in shipments:
-        status, hours = calculate_shipment_status(shipment.get("last_free_day", ""))
+        # If picked up, status is "picked_up", otherwise calculate from LFD
+        if shipment.get("picked_up"):
+            status = "picked_up"
+            hours = 0
+        else:
+            status, hours = calculate_shipment_status(shipment.get("last_free_day", ""))
+        
         result.append({
             "id": shipment.get("id", ""),
             "user_id": shipment.get("user_id", ""),
             "container_number": shipment.get("container_number", ""),
             "vessel_name": shipment.get("vessel_name", "Unknown"),
+            "carrier": shipment.get("carrier", ""),
             "arrival_date": shipment.get("arrival_date", ""),
             "last_free_day": shipment.get("last_free_day", ""),
             "notes": shipment.get("notes"),
             "status": status,
             "hours_remaining": round(hours, 1),
             "created_at": shipment.get("created_at", ""),
-            "source": shipment.get("source", "manual")
+            "source": shipment.get("source", "manual"),
+            "picked_up": shipment.get("picked_up", False),
+            "picked_up_at": shipment.get("picked_up_at"),
+            "fees_avoided": shipment.get("fees_avoided", 0)
         })
     
     return result
@@ -822,15 +832,14 @@ async def seed_demo_data(current_user: dict = Depends(get_current_user)):
 
 # ==================== POSTMARK INBOUND WEBHOOK ====================
 
+from fastapi import BackgroundTasks
+
 @api_router.post("/inbound-lfd")
-async def postmark_inbound_webhook(payload: PostmarkInboundPayload):
+async def postmark_inbound_webhook(payload: PostmarkInboundPayload, background_tasks: BackgroundTasks):
     """
     Postmark Inbound Webhook: Receives emails sent to [customer]@inbound.lfdclock.com
-    Parses PDF attachments with Gemini, upserts shipments, sends SMS alerts.
+    Returns immediately, processes PDF in background.
     """
-    import tempfile
-    import os as os_module
-    
     try:
         logger.info(f"Postmark webhook received: To={payload.To}, From={payload.From}, Subject={payload.Subject}")
         
@@ -848,11 +857,35 @@ async def postmark_inbound_webhook(payload: PostmarkInboundPayload):
             logger.warning(f"No customer found for inbound prefix: {inbound_prefix}")
             return {"status": "error", "reason": f"No customer found for {inbound_prefix}"}
         
+        # Step 3: Add to background processing queue
+        background_tasks.add_task(
+            process_inbound_email_background,
+            payload=payload,
+            customer=customer,
+            inbound_prefix=inbound_prefix
+        )
+        
+        # Return immediately so Postmark doesn't timeout
+        return {"status": "accepted", "message": "Processing in background", "customer": inbound_prefix}
+        
+    except Exception as e:
+        logger.error(f"Postmark webhook error: {str(e)}")
+        return {"status": "error", "detail": str(e)}
+
+
+async def process_inbound_email_background(payload: PostmarkInboundPayload, customer: dict, inbound_prefix: str):
+    """Background task to process inbound email"""
+    import tempfile
+    import os as os_module
+    
+    try:
+        logger.info(f"Background processing started for {inbound_prefix}")
+        
         customer_phone = customer.get("phone")
         if not customer_phone:
             logger.warning(f"Customer {inbound_prefix} has no phone number - will process but skip SMS")
         
-        # Step 3: Process attachments (look for PDFs)
+        # Process attachments (look for PDFs)
         attachments = payload.Attachments or []
         pdf_attachments = [a for a in attachments if a.ContentType == "application/pdf" or a.Name.lower().endswith('.pdf')]
         
@@ -861,19 +894,19 @@ async def postmark_inbound_webhook(payload: PostmarkInboundPayload):
             logger.info("No PDF attachments, attempting to parse email body")
             text_content = payload.TextBody or payload.HtmlBody or ""
             if not text_content:
-                return {"status": "error", "reason": "No PDF attachment and no email body to parse"}
+                logger.error(f"No PDF attachment and no email body to parse for {inbound_prefix}")
+                return
             
             # Parse text content
-            result = await parse_and_process_shipment(
+            await parse_and_process_shipment(
                 content=text_content,
                 content_type="text",
                 customer=customer,
                 source="email_body"
             )
-            return result
+            return
         
-        # Step 4: Process each PDF attachment
-        results = []
+        # Process each PDF attachment
         for attachment in pdf_attachments:
             try:
                 # Decode base64 PDF
@@ -886,14 +919,13 @@ async def postmark_inbound_webhook(payload: PostmarkInboundPayload):
                 
                 try:
                     # Parse PDF with Gemini
-                    result = await parse_and_process_shipment(
+                    await parse_and_process_shipment(
                         content=tmp_path,
                         content_type="pdf",
                         customer=customer,
                         source="pdf_attachment",
                         filename=attachment.Name
                     )
-                    results.append(result)
                 finally:
                     # Clean up temp file
                     if os_module.path.exists(tmp_path):
@@ -901,18 +933,11 @@ async def postmark_inbound_webhook(payload: PostmarkInboundPayload):
                         
             except Exception as e:
                 logger.error(f"Error processing attachment {attachment.Name}: {str(e)}")
-                results.append({"status": "error", "filename": attachment.Name, "error": str(e)})
         
-        return {
-            "status": "processed",
-            "customer": inbound_prefix,
-            "attachments_processed": len(results),
-            "results": results
-        }
+        logger.info(f"Background processing completed for {inbound_prefix}")
         
     except Exception as e:
-        logger.error(f"Postmark webhook error: {str(e)}")
-        return {"status": "error", "detail": str(e)}
+        logger.error(f"Background processing error for {inbound_prefix}: {str(e)}")
 
 
 async def parse_and_process_shipment(content: str, content_type: str, customer: dict, source: str, filename: str = None):
