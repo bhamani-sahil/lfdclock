@@ -7,6 +7,8 @@ import { LandingPage } from '@/components/LandingPage';
 import { LoginPage } from '@/components/auth/LoginPage';
 import { SignupPage } from '@/components/auth/SignupPage';
 import { DashboardPage } from '@/components/dashboard/DashboardPage';
+import { PrivacyPolicyPage } from '@/components/legal/PrivacyPolicyPage';
+import { TermsOfServicePage } from '@/components/legal/TermsOfServicePage';
 import { Loader2 } from 'lucide-react';
 
 // Protected Route Component
@@ -93,6 +95,10 @@ function AppRoutes() {
           </ProtectedRoute>
         } 
       />
+
+      {/* Legal Pages (Public) */}
+      <Route path="/privacy" element={<PrivacyPolicyPage />} />
+      <Route path="/terms" element={<TermsOfServicePage />} />
 
       {/* Fallback */}
       <Route path="*" element={<Navigate to="/" replace />} />
