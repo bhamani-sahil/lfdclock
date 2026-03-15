@@ -62,11 +62,12 @@ export const DashboardPage = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const [shipments, setShipments] = useState([]);
-  const [stats, setStats] = useState({ total: 0, safe: 0, warning: 0, critical: 0, expired: 0, potential_fees_avoided: 0 });
+  const [stats, setStats] = useState({ total: 0, safe: 0, warning: 0, critical: 0, expired: 0, potential_fees_avoided: 0, active: 0, picked_up: 0 });
   const [loading, setLoading] = useState(true);
   const [copied, setCopied] = useState(false);
   const [addDialogOpen, setAddDialogOpen] = useState(false);
   const [seedingDemo, setSeedingDemo] = useState(false);
+  const [activeTab, setActiveTab] = useState('active'); // 'active' | 'picked_up' | 'all'
 
   const isSettingsPage = location.pathname === '/settings';
 
@@ -245,15 +246,49 @@ export const DashboardPage = () => {
 
             {/* Stats Cards */}
             <div className="grid grid-cols-2 md:grid-cols-5 gap-4 mb-8">
-              <StatCard label="Total" value={stats.total} icon={Package} />
+              <StatCard label="Active" value={stats.active} icon={Package} />
               <StatCard label="Safe" value={stats.safe} icon={Check} variant="safe" />
               <StatCard label="Warning" value={stats.warning} icon={Clock} variant="warning" />
               <StatCard label="Critical" value={stats.critical} icon={AlertTriangle} variant="critical" />
-              <StatCard label="Expired" value={stats.expired} icon={AlertTriangle} variant="expired" />
+              <StatCard label="Picked Up" value={stats.picked_up} icon={CheckCircle} variant="picked_up" />
             </div>
 
             {/* Drag & Drop Upload Zone */}
             <DragDropZone token={token} onSuccess={fetchData} />
+
+            {/* Tabs */}
+            <div className="flex gap-2 mb-4 border-b border-slate-200">
+              <button
+                onClick={() => setActiveTab('active')}
+                className={`px-4 py-2 text-sm font-medium transition-colors ${
+                  activeTab === 'active' 
+                    ? 'text-primary border-b-2 border-primary' 
+                    : 'text-muted-foreground hover:text-foreground'
+                }`}
+              >
+                Active ({stats.active})
+              </button>
+              <button
+                onClick={() => setActiveTab('picked_up')}
+                className={`px-4 py-2 text-sm font-medium transition-colors ${
+                  activeTab === 'picked_up' 
+                    ? 'text-emerald-600 border-b-2 border-emerald-600' 
+                    : 'text-muted-foreground hover:text-foreground'
+                }`}
+              >
+                Picked Up ({stats.picked_up})
+              </button>
+              <button
+                onClick={() => setActiveTab('all')}
+                className={`px-4 py-2 text-sm font-medium transition-colors ${
+                  activeTab === 'all' 
+                    ? 'text-primary border-b-2 border-primary' 
+                    : 'text-muted-foreground hover:text-foreground'
+                }`}
+              >
+                All ({stats.total})
+              </button>
+            </div>
 
             {/* Shipments Grid */}
             {loading ? (
@@ -264,15 +299,31 @@ export const DashboardPage = () => {
               <EmptyState onSeedDemo={seedDemoData} seedingDemo={seedingDemo} />
             ) : (
               <div className="space-y-4">
-                {shipments.map((shipment) => (
-                  <ShipmentCard 
-                    key={shipment.id} 
-                    shipment={shipment} 
-                    token={token}
-                    onDelete={() => deleteShipment(shipment.id)}
-                    onUpdate={fetchData}
-                  />
-                ))}
+                {shipments
+                  .filter(s => {
+                    if (activeTab === 'active') return !s.picked_up;
+                    if (activeTab === 'picked_up') return s.picked_up;
+                    return true; // 'all'
+                  })
+                  .map((shipment) => (
+                    <ShipmentCard 
+                      key={shipment.id} 
+                      shipment={shipment} 
+                      token={token}
+                      onDelete={() => deleteShipment(shipment.id)}
+                      onUpdate={fetchData}
+                    />
+                  ))
+                }
+                {shipments.filter(s => {
+                  if (activeTab === 'active') return !s.picked_up;
+                  if (activeTab === 'picked_up') return s.picked_up;
+                  return true;
+                }).length === 0 && (
+                  <div className="text-center py-10 text-muted-foreground">
+                    No {activeTab === 'picked_up' ? 'picked up' : 'active'} shipments
+                  </div>
+                )}
               </div>
             )}
           </>
@@ -288,6 +339,7 @@ const StatCard = ({ label, value, icon: Icon, variant }) => {
     warning: 'border-l-amber-500 bg-amber-50',
     critical: 'border-l-red-500 bg-red-50',
     expired: 'border-l-slate-400 bg-slate-100',
+    picked_up: 'border-l-emerald-500 bg-emerald-50',
     default: 'border-l-slate-300'
   };
 
@@ -402,10 +454,21 @@ const ShipmentCard = ({ shipment, token, onDelete, onUpdate }) => {
             )}
           </div>
 
-          {/* Center: Countdown */}
+          {/* Center: Countdown or Picked Up Date */}
           <div className="flex-1 flex flex-col items-center">
-            <p className="text-xs text-muted-foreground mb-1 uppercase tracking-wide">Time Remaining</p>
-            <CountdownTimer targetDate={shipment.last_free_day} />
+            {shipment.picked_up ? (
+              <>
+                <p className="text-xs text-emerald-600 mb-1 uppercase tracking-wide">Picked Up</p>
+                <p className="text-emerald-700 font-medium">
+                  {shipment.picked_up_at ? new Date(shipment.picked_up_at).toLocaleDateString() : 'Completed'}
+                </p>
+              </>
+            ) : (
+              <>
+                <p className="text-xs text-muted-foreground mb-1 uppercase tracking-wide">Time Remaining</p>
+                <CountdownTimer targetDate={shipment.last_free_day} />
+              </>
+            )}
           </div>
 
           {/* Right: LFD Date & Actions */}

@@ -490,6 +490,10 @@ async def get_shipment_stats(current_user: dict = Depends(get_current_user)):
         {"_id": 0}
     ).to_list(1000)
     
+    # Get user's lifetime savings
+    user = await db.users.find_one({"id": current_user["id"]}, {"_id": 0})
+    lifetime_savings = user.get("lifetime_fees_avoided", 0) if user else 0
+    
     stats = {
         "total": len(shipments),
         "safe": 0,
@@ -497,20 +501,20 @@ async def get_shipment_stats(current_user: dict = Depends(get_current_user)):
         "critical": 0,
         "expired": 0,
         "picked_up": 0,
-        "potential_fees_avoided": 0
+        "active": 0,
+        "potential_fees_avoided": lifetime_savings  # Use lifetime savings
     }
     
     DEMURRAGE_RATE = 300  # $300 per container assumed savings
     
     for shipment in shipments:
-        status, _ = calculate_shipment_status(shipment.get("last_free_day", ""))
-        if status in stats:
-            stats[status] += 1
-        
-        # Count picked up containers and calculate savings
         if shipment.get("picked_up"):
             stats["picked_up"] += 1
-            stats["potential_fees_avoided"] += shipment.get("fees_avoided", DEMURRAGE_RATE)
+        else:
+            stats["active"] += 1
+            status, _ = calculate_shipment_status(shipment.get("last_free_day", ""))
+            if status in stats:
+                stats[status] += 1
     
     return stats
 
@@ -541,6 +545,12 @@ async def mark_shipment_picked_up(
             "picked_up_at": datetime.now(timezone.utc).isoformat(),
             "fees_avoided": fees_avoided
         }}
+    )
+    
+    # Also update user's lifetime savings
+    await db.users.update_one(
+        {"id": current_user["id"]},
+        {"$inc": {"lifetime_fees_avoided": fees_avoided}}
     )
     
     # Delete pending reminders for this shipment
@@ -1014,9 +1024,9 @@ If a field cannot be found, use null. Return ONLY the JSON, no explanation."""
         if not container_id or not lfd:
             return {"status": "error", "reason": "Could not extract container ID or LFD from document"}
         
-        # Convert LFD to ISO format if needed
+        # Convert LFD to ISO format - use end of day (23:59:59) since LFD means "last day" to pick up
         if lfd and len(lfd) == 10:  # YYYY-MM-DD format
-            lfd = f"{lfd}T00:00:00Z"
+            lfd = f"{lfd}T23:59:59Z"
         
         # Calculate shipment status
         status, hours = calculate_shipment_status(lfd)

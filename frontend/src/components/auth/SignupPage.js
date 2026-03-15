@@ -158,16 +158,18 @@ export const SignupPage = () => {
                 />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="phone">Phone (Optional)</Label>
+                <Label htmlFor="phone">Phone Number (for SMS alerts)</Label>
                 <Input
                   id="phone"
                   type="tel"
-                  placeholder="+1 (555) 000-0000"
+                  placeholder="+1 555 000 0000"
                   value={phone}
                   onChange={(e) => setPhone(e.target.value)}
+                  required
                   data-testid="signup-phone-input"
                   className="h-11 bg-white border-2 border-slate-200 focus:border-primary"
                 />
+                <p className="text-xs text-muted-foreground">Include country code (e.g., +1 for US/Canada)</p>
               </div>
               <div className="space-y-2">
                 <Label htmlFor="password">Password</Label>
