@@ -143,6 +143,35 @@ class SMSLog(BaseModel):
     sent_at: str
     status: str
 
+class ReminderCreate(BaseModel):
+    shipment_id: str
+    container_number: str
+    schedule_time: str
+    reminder_type: str  # 48h, 24h, 12h, 6h
+
+class DirectUploadRequest(BaseModel):
+    filename: str
+    content: str  # Base64 encoded PDF
+
+class TruckerShareRequest(BaseModel):
+    shipment_id: str
+    trucker_phone: str
+    trucker_name: Optional[str] = None
+
+# Carrier portal links
+CARRIER_PORTALS = {
+    "MSC": "https://www.msc.com/track-a-shipment",
+    "MAERSK": "https://www.maersk.com/tracking",
+    "CMA CGM": "https://www.cma-cgm.com/ebusiness/tracking",
+    "HAPAG-LLOYD": "https://www.hapag-lloyd.com/en/online-business/track/track-by-container-solution.html",
+    "EVERGREEN": "https://www.evergreen-line.com/twe1/jsp/TW1_Tracking.jsp",
+    "COSCO": "https://elines.coscoshipping.com/ebusiness/cargoTracking",
+    "ONE": "https://ecomm.one-line.com/ecom/CUP_HOM_3301GS.do",
+    "YANG MING": "https://www.yangming.com/e-service/track_trace/track_trace_cargo_tracking.aspx",
+    "ZIM": "https://www.zim.com/tools/track-a-shipment",
+    "DEFAULT": "https://www.google.com/search?q=container+tracking"
+}
+
 # ==================== HELPERS ====================
 
 def generate_inbound_email(company_name: str) -> str:
@@ -212,6 +241,61 @@ def calculate_shipment_status(last_free_day: str) -> tuple:
             return "safe", hours_remaining
     except:
         return "unknown", 0
+
+async def create_reminders_for_shipment(shipment_id: str, user_id: str, container_number: str, last_free_day: str, user_settings: dict):
+    """Create reminder records for a shipment based on user's notification settings"""
+    try:
+        lfd = datetime.fromisoformat(last_free_day.replace('Z', '+00:00'))
+        now = datetime.now(timezone.utc)
+        
+        reminder_intervals = [
+            ("48h", 48, user_settings.get("notify_48h", True)),
+            ("24h", 24, user_settings.get("notify_24h", True)),
+            ("12h", 12, user_settings.get("notify_12h", True)),
+            ("6h", 6, user_settings.get("notify_6h", True)),
+        ]
+        
+        # Delete existing reminders for this shipment (for updates)
+        await db.reminders.delete_many({"shipment_id": shipment_id})
+        
+        reminders_created = []
+        for reminder_type, hours_before, is_enabled in reminder_intervals:
+            if not is_enabled:
+                continue
+                
+            schedule_time = lfd - timedelta(hours=hours_before)
+            
+            # Only create if schedule time is in the future
+            if schedule_time > now:
+                reminder_doc = {
+                    "id": str(uuid.uuid4()),
+                    "shipment_id": shipment_id,
+                    "user_id": user_id,
+                    "container_number": container_number,
+                    "reminder_type": reminder_type,
+                    "hours_before": hours_before,
+                    "schedule_time": schedule_time.isoformat(),
+                    "lfd": last_free_day,
+                    "status": "pending",
+                    "created_at": datetime.now(timezone.utc).isoformat()
+                }
+                await db.reminders.insert_one(reminder_doc)
+                reminders_created.append(reminder_type)
+        
+        return reminders_created
+    except Exception as e:
+        logger.error(f"Error creating reminders: {str(e)}")
+        return []
+
+def get_carrier_portal(carrier_name: str) -> str:
+    """Get the tracking portal URL for a carrier"""
+    if not carrier_name:
+        return CARRIER_PORTALS["DEFAULT"]
+    carrier_upper = carrier_name.upper()
+    for key in CARRIER_PORTALS:
+        if key in carrier_upper:
+            return CARRIER_PORTALS[key]
+    return CARRIER_PORTALS["DEFAULT"]
 
 # ==================== AUTH ROUTES ====================
 
@@ -348,10 +432,23 @@ async def create_shipment(
         "status": status,
         "hours_remaining": round(hours, 1),
         "created_at": datetime.now(timezone.utc).isoformat(),
-        "source": "manual"
+        "source": "manual",
+        "fees_avoided": 0,
+        "picked_up": False
     }
     
     await db.shipments.insert_one(shipment_doc)
+    
+    # Create reminders based on user settings
+    user_settings = current_user.get("notification_settings", {})
+    await create_reminders_for_shipment(
+        shipment_id, 
+        current_user["id"], 
+        shipment_data.container_number.upper(),
+        shipment_data.last_free_day,
+        user_settings
+    )
+    
     # Return without _id (which MongoDB adds)
     if '_id' in shipment_doc:
         del shipment_doc['_id']
@@ -362,10 +459,14 @@ async def delete_shipment(
     shipment_id: str,
     current_user: dict = Depends(get_current_user)
 ):
+    # Delete shipment
     result = await db.shipments.delete_one({
         "id": shipment_id,
         "user_id": current_user["id"]
     })
+    
+    # Also delete associated reminders
+    await db.reminders.delete_many({"shipment_id": shipment_id})
     
     if result.deleted_count == 0:
         raise HTTPException(status_code=404, detail="Shipment not found")
@@ -384,15 +485,61 @@ async def get_shipment_stats(current_user: dict = Depends(get_current_user)):
         "safe": 0,
         "warning": 0,
         "critical": 0,
-        "expired": 0
+        "expired": 0,
+        "picked_up": 0,
+        "potential_fees_avoided": 0
     }
     
+    DEMURRAGE_RATE = 300  # $300 per container assumed savings
+    
     for shipment in shipments:
-        status, _ = calculate_shipment_status(shipment["last_free_day"])
+        status, _ = calculate_shipment_status(shipment.get("last_free_day", ""))
         if status in stats:
             stats[status] += 1
+        
+        # Count picked up containers and calculate savings
+        if shipment.get("picked_up"):
+            stats["picked_up"] += 1
+            stats["potential_fees_avoided"] += shipment.get("fees_avoided", DEMURRAGE_RATE)
     
     return stats
+
+@api_router.post("/shipments/{shipment_id}/mark-picked-up")
+async def mark_shipment_picked_up(
+    shipment_id: str,
+    current_user: dict = Depends(get_current_user)
+):
+    """Mark a container as picked up before LFD - records savings"""
+    shipment = await db.shipments.find_one({
+        "id": shipment_id,
+        "user_id": current_user["id"]
+    }, {"_id": 0})
+    
+    if not shipment:
+        raise HTTPException(status_code=404, detail="Shipment not found")
+    
+    # Calculate hours remaining when picked up
+    status, hours_remaining = calculate_shipment_status(shipment.get("last_free_day", ""))
+    
+    # Assume $300/day demurrage avoided if picked up before LFD
+    fees_avoided = 300 if hours_remaining > 0 else 0
+    
+    await db.shipments.update_one(
+        {"id": shipment_id},
+        {"$set": {
+            "picked_up": True,
+            "picked_up_at": datetime.now(timezone.utc).isoformat(),
+            "fees_avoided": fees_avoided
+        }}
+    )
+    
+    # Delete pending reminders for this shipment
+    await db.reminders.delete_many({"shipment_id": shipment_id, "status": "pending"})
+    
+    return {
+        "message": "Container marked as picked up",
+        "fees_avoided": fees_avoided
+    }
 
 # ==================== EMAIL PARSING (SIMULATED) ====================
 
@@ -1148,6 +1295,251 @@ async def test_email_parse_and_sms(
         logger.error(f"Test email-SMS error: {str(e)}")
         raise HTTPException(status_code=500, detail=f"Test failed: {str(e)}")
 
+# ==================== CRON JOB - AUTOMATED REMINDERS ====================
+
+@api_router.post("/cron/process-reminders")
+async def process_pending_reminders():
+    """
+    CRON JOB: Run every hour to check and send pending reminders.
+    Scans for reminders where schedule_time <= now and status = 'pending'.
+    """
+    now = datetime.now(timezone.utc)
+    
+    # Find all pending reminders that should be sent
+    pending_reminders = await db.reminders.find({
+        "status": "pending",
+        "schedule_time": {"$lte": now.isoformat()}
+    }, {"_id": 0}).to_list(1000)
+    
+    results = {
+        "processed": 0,
+        "sent": 0,
+        "failed": 0,
+        "skipped": 0,
+        "details": []
+    }
+    
+    for reminder in pending_reminders:
+        results["processed"] += 1
+        
+        try:
+            # Get the user for this reminder
+            user = await db.users.find_one({"id": reminder["user_id"]}, {"_id": 0})
+            if not user:
+                results["skipped"] += 1
+                continue
+            
+            # Check if user still wants this notification type
+            user_settings = user.get("notification_settings", {})
+            setting_key = f"notify_{reminder['reminder_type']}"
+            if not user_settings.get(setting_key, True):
+                # User disabled this notification type, mark as skipped
+                await db.reminders.update_one(
+                    {"id": reminder["id"]},
+                    {"$set": {"status": "skipped", "processed_at": now.isoformat()}}
+                )
+                results["skipped"] += 1
+                continue
+            
+            # Get user phone
+            phone = user.get("phone")
+            if not phone:
+                await db.reminders.update_one(
+                    {"id": reminder["id"]},
+                    {"$set": {"status": "failed", "error": "No phone number", "processed_at": now.isoformat()}}
+                )
+                results["failed"] += 1
+                continue
+            
+            # Send SMS
+            hours_before = reminder.get("hours_before", "?")
+            container = reminder.get("container_number", "UNKNOWN")
+            sms_message = f"Alert: Container {container} expires in {hours_before} hours. Avoid storage fees!"
+            
+            sms_result = send_real_sms(phone, sms_message)
+            
+            # Update reminder status
+            await db.reminders.update_one(
+                {"id": reminder["id"]},
+                {"$set": {
+                    "status": "sent",
+                    "processed_at": now.isoformat(),
+                    "twilio_sid": sms_result.get("sid")
+                }}
+            )
+            
+            # Log the SMS
+            sms_log = {
+                "id": str(uuid.uuid4()),
+                "user_id": reminder["user_id"],
+                "shipment_id": reminder["shipment_id"],
+                "container_number": container,
+                "message": sms_message,
+                "notification_type": f"reminder_{reminder['reminder_type']}",
+                "sent_at": now.isoformat(),
+                "status": "sent_real",
+                "twilio_sid": sms_result.get("sid")
+            }
+            await db.sms_logs.insert_one(sms_log)
+            
+            results["sent"] += 1
+            results["details"].append({
+                "container": container,
+                "type": reminder["reminder_type"],
+                "status": "sent"
+            })
+            
+        except Exception as e:
+            logger.error(f"Error processing reminder {reminder['id']}: {str(e)}")
+            await db.reminders.update_one(
+                {"id": reminder["id"]},
+                {"$set": {"status": "failed", "error": str(e), "processed_at": now.isoformat()}}
+            )
+            results["failed"] += 1
+    
+    return results
+
+@api_router.get("/reminders")
+async def get_user_reminders(current_user: dict = Depends(get_current_user)):
+    """Get all reminders for the current user"""
+    reminders = await db.reminders.find(
+        {"user_id": current_user["id"]},
+        {"_id": 0}
+    ).sort("schedule_time", 1).to_list(1000)
+    return reminders
+
+# ==================== DIRECT UPLOAD (DRAG & DROP) ====================
+
+@api_router.post("/upload/pdf")
+async def direct_upload_pdf(
+    file: UploadFile = File(...),
+    current_user: dict = Depends(get_current_user)
+):
+    """
+    Direct PDF upload: Drag & drop a PDF to parse it immediately.
+    """
+    import tempfile
+    import os as os_module
+    
+    if not file.filename.lower().endswith('.pdf'):
+        raise HTTPException(status_code=400, detail="Only PDF files are supported")
+    
+    try:
+        # Read file content
+        content = await file.read()
+        
+        # Save to temp file
+        with tempfile.NamedTemporaryFile(suffix='.pdf', delete=False) as tmp_file:
+            tmp_file.write(content)
+            tmp_path = tmp_file.name
+        
+        try:
+            # Parse PDF with Gemini
+            result = await parse_and_process_shipment(
+                content=tmp_path,
+                content_type="pdf",
+                customer=current_user,
+                source="direct_upload",
+                filename=file.filename
+            )
+            return result
+        finally:
+            # Clean up temp file
+            if os_module.path.exists(tmp_path):
+                os_module.unlink(tmp_path)
+                
+    except Exception as e:
+        logger.error(f"Direct upload error: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Upload failed: {str(e)}")
+
+# ==================== TRUCKER SHARE ====================
+
+@api_router.post("/shipments/{shipment_id}/share-trucker")
+async def share_with_trucker(
+    shipment_id: str,
+    request: TruckerShareRequest,
+    current_user: dict = Depends(get_current_user)
+):
+    """
+    Share container LFD details with a trucker via SMS.
+    """
+    shipment = await db.shipments.find_one({
+        "id": shipment_id,
+        "user_id": current_user["id"]
+    }, {"_id": 0})
+    
+    if not shipment:
+        raise HTTPException(status_code=404, detail="Shipment not found")
+    
+    container = shipment.get("container_number", "UNKNOWN")
+    vessel = shipment.get("vessel_name", "Unknown")
+    lfd = shipment.get("last_free_day", "")[:10]
+    carrier = shipment.get("carrier", "")
+    status, hours = calculate_shipment_status(shipment.get("last_free_day", ""))
+    
+    trucker_name = request.trucker_name or "Driver"
+    
+    sms_message = f"Hi {trucker_name}, pickup needed:\n\nContainer: {container}\nVessel: {vessel}\nLFD: {lfd}\nTime left: {round(hours)}h\n\nFrom: {current_user.get('company_name', 'LFD Clock')}"
+    
+    try:
+        sms_result = send_real_sms(request.trucker_phone, sms_message)
+        
+        # Log the SMS
+        sms_log = {
+            "id": str(uuid.uuid4()),
+            "user_id": current_user["id"],
+            "shipment_id": shipment_id,
+            "container_number": container,
+            "message": sms_message,
+            "notification_type": "trucker_share",
+            "sent_at": datetime.now(timezone.utc).isoformat(),
+            "status": "sent_real",
+            "twilio_sid": sms_result.get("sid"),
+            "trucker_phone": request.trucker_phone
+        }
+        await db.sms_logs.insert_one(sms_log)
+        
+        return {
+            "success": True,
+            "message": f"LFD details sent to {request.trucker_phone}",
+            "sms_sid": sms_result.get("sid")
+        }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to send SMS: {str(e)}")
+
+# ==================== CARRIER PORTAL LINKS ====================
+
+@api_router.get("/shipments/{shipment_id}/carrier-portal")
+async def get_carrier_portal_link(
+    shipment_id: str,
+    current_user: dict = Depends(get_current_user)
+):
+    """Get the carrier tracking portal URL for a shipment"""
+    shipment = await db.shipments.find_one({
+        "id": shipment_id,
+        "user_id": current_user["id"]
+    }, {"_id": 0})
+    
+    if not shipment:
+        raise HTTPException(status_code=404, detail="Shipment not found")
+    
+    carrier = shipment.get("carrier", shipment.get("vessel_name", ""))
+    portal_url = get_carrier_portal(carrier)
+    
+    return {
+        "carrier": carrier,
+        "portal_url": portal_url,
+        "container_number": shipment.get("container_number")
+    }
+
+@api_router.get("/")
+async def root():
+    return {"message": "LFD Clock API is running"}
+
+@api_router.get("/health")
+async def health_check():
+    return {"status": "healthy", "service": "lfd-clock"}
+
 # Include the router in the main app
 app.include_router(api_router)
 
@@ -1165,6 +1557,98 @@ logging.basicConfig(
     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
 )
 logger = logging.getLogger(__name__)
+
+# Background task for automated reminders
+import asyncio
+
+async def reminder_scheduler():
+    """Background task that checks reminders every 5 minutes"""
+    while True:
+        try:
+            await asyncio.sleep(300)  # Run every 5 minutes
+            
+            now = datetime.now(timezone.utc)
+            
+            # Find all pending reminders that should be sent
+            pending_reminders = await db.reminders.find({
+                "status": "pending",
+                "schedule_time": {"$lte": now.isoformat()}
+            }, {"_id": 0}).to_list(100)
+            
+            for reminder in pending_reminders:
+                try:
+                    # Get the user for this reminder
+                    user = await db.users.find_one({"id": reminder["user_id"]}, {"_id": 0})
+                    if not user:
+                        continue
+                    
+                    # Check if user still wants this notification type
+                    user_settings = user.get("notification_settings", {})
+                    setting_key = f"notify_{reminder['reminder_type']}"
+                    if not user_settings.get(setting_key, True):
+                        await db.reminders.update_one(
+                            {"id": reminder["id"]},
+                            {"$set": {"status": "skipped", "processed_at": now.isoformat()}}
+                        )
+                        continue
+                    
+                    # Get user phone
+                    phone = user.get("phone")
+                    if not phone:
+                        await db.reminders.update_one(
+                            {"id": reminder["id"]},
+                            {"$set": {"status": "failed", "error": "No phone number", "processed_at": now.isoformat()}}
+                        )
+                        continue
+                    
+                    # Send SMS
+                    hours_before = reminder.get("hours_before", "?")
+                    container = reminder.get("container_number", "UNKNOWN")
+                    sms_message = f"Alert: Container {container} expires in {hours_before} hours. Avoid storage fees!"
+                    
+                    sms_result = send_real_sms(phone, sms_message)
+                    
+                    # Update reminder status
+                    await db.reminders.update_one(
+                        {"id": reminder["id"]},
+                        {"$set": {
+                            "status": "sent",
+                            "processed_at": now.isoformat(),
+                            "twilio_sid": sms_result.get("sid")
+                        }}
+                    )
+                    
+                    # Log the SMS
+                    sms_log = {
+                        "id": str(uuid.uuid4()),
+                        "user_id": reminder["user_id"],
+                        "shipment_id": reminder["shipment_id"],
+                        "container_number": container,
+                        "message": sms_message,
+                        "notification_type": f"reminder_{reminder['reminder_type']}",
+                        "sent_at": now.isoformat(),
+                        "status": "sent_real",
+                        "twilio_sid": sms_result.get("sid")
+                    }
+                    await db.sms_logs.insert_one(sms_log)
+                    
+                    logger.info(f"Sent {reminder['reminder_type']} reminder for {container} to {phone}")
+                    
+                except Exception as e:
+                    logger.error(f"Error processing reminder {reminder.get('id')}: {str(e)}")
+                    await db.reminders.update_one(
+                        {"id": reminder["id"]},
+                        {"$set": {"status": "failed", "error": str(e), "processed_at": now.isoformat()}}
+                    )
+                    
+        except Exception as e:
+            logger.error(f"Reminder scheduler error: {str(e)}")
+
+@app.on_event("startup")
+async def startup_event():
+    """Start background tasks on app startup"""
+    asyncio.create_task(reminder_scheduler())
+    logger.info("Reminder scheduler started - checking every 5 minutes")
 
 @app.on_event("shutdown")
 async def shutdown_db_client():

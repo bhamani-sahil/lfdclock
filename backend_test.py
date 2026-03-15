@@ -90,6 +90,14 @@ class LFDClockAPITester:
             print(f"   🔑 Token acquired: {self.token[:20]}...")
             print(f"   👤 User ID: {self.user_id}")
             print(f"   📧 Forwarding email: {response['user'].get('forwarding_email', 'N/A')}")
+            
+            # Verify inbound email is created with @inbound.lfdclock.com
+            inbound_email = response['user'].get('inbound_email', '')
+            if '@inbound.lfdclock.com' in inbound_email:
+                print(f"   ✅ Inbound email: {inbound_email}")
+            else:
+                print(f"   ❌ Missing inbound email with @inbound.lfdclock.com domain")
+                
             return True
         return False
 
@@ -224,6 +232,126 @@ class LFDClockAPITester:
             print(f"   🔔 Notifications sent: {len(notifications)}")
         return success
 
+    def test_mark_picked_up(self, shipment_id):
+        """Test mark shipment as picked up"""
+        if not shipment_id:
+            print("❌ No shipment ID provided for mark picked up test")
+            return False
+            
+        success, response = self.run_test(
+            "Mark Shipment Picked Up", 
+            "POST", 
+            f"shipments/{shipment_id}/mark-picked-up", 
+            200
+        )
+        if success:
+            fees_avoided = response.get('fees_avoided', 0)
+            print(f"   💰 Fees avoided: ${fees_avoided}")
+        return success
+
+    def test_share_with_trucker(self, shipment_id):
+        """Test share with trucker functionality"""
+        if not shipment_id:
+            print("❌ No shipment ID provided for trucker share test")
+            return False
+            
+        success, response = self.run_test(
+            "Share with Trucker",
+            "POST",
+            f"shipments/{shipment_id}/share-trucker",
+            200,
+            data={
+                "shipment_id": shipment_id,
+                "trucker_phone": "+1-555-TRUCKER",
+                "trucker_name": "Test Driver"
+            }
+        )
+        if success:
+            print(f"   🚛 SMS sent to trucker: {response.get('success')}")
+        return success
+
+    def test_carrier_portal(self, shipment_id):
+        """Test carrier portal link functionality"""
+        if not shipment_id:
+            print("❌ No shipment ID provided for carrier portal test")
+            return False
+            
+        success, response = self.run_test(
+            "Get Carrier Portal Link",
+            "GET", 
+            f"shipments/{shipment_id}/carrier-portal", 
+            200
+        )
+        if success:
+            portal_url = response.get('portal_url', '')
+            carrier = response.get('carrier', '')
+            print(f"   🌐 Portal URL: {portal_url[:50]}...")
+            print(f"   🚢 Carrier: {carrier}")
+        return success
+
+    def test_direct_pdf_upload(self):
+        """Test direct PDF upload endpoint (simulate with minimal data)"""
+        # Note: This would normally require a real PDF file
+        # For testing purposes, we'll test the endpoint exists but expect a 400 for invalid data
+        test_headers = {'Content-Type': 'multipart/form-data'}
+        if self.token:
+            test_headers['Authorization'] = f'Bearer {self.token}'
+        
+        # Test that endpoint exists (will fail with 400 but shows endpoint is available)
+        url = f"{self.base_url}/upload/pdf"
+        print(f"\n🔍 Testing Direct PDF Upload Endpoint...")
+        print(f"   URL: {url}")
+        
+        try:
+            # Just test with empty data to verify endpoint exists
+            response = requests.post(url, headers={'Authorization': f'Bearer {self.token}'}, timeout=30)
+            # Expect 422 (validation error) since we're not sending a valid PDF
+            if response.status_code in [400, 422]:
+                print(f"✅ PASSED - PDF Upload endpoint exists (status: {response.status_code})")
+                return True
+            else:
+                print(f"❌ FAILED - Unexpected status: {response.status_code}")
+                return False
+        except Exception as e:
+            print(f"❌ FAILED - Error: {str(e)}")
+            return False
+
+    def test_test_email_sms(self):
+        """Test the test email+SMS endpoint"""
+        sample_email = """Subject: Arrival Notice - Container TESTC1234567
+
+Dear Customer,
+
+Your shipment has arrived at the Port of Los Angeles.
+
+Container Number: TESTC1234567
+Vessel: TEST VESSEL
+Arrival Date: March 10, 2026
+Last Free Day (LFD): March 15, 2026
+
+Please arrange pickup before the LFD to avoid demurrage charges.
+
+Best regards,
+Test Shipping Line"""
+
+        success, response = self.run_test(
+            "Test Email+SMS",
+            "POST",
+            "test/email-sms",
+            200,
+            data={
+                "email_content": sample_email,
+                "phone_number": "+1-555-TEST-SMS"
+            }
+        )
+        if success:
+            action = response.get('action', 'unknown')
+            container = response.get('parsed_data', {}).get('container_number', 'UNKNOWN')
+            print(f"   📧 Email parsed: {container} | Action: {action}")
+            sms_info = response.get('sms', {})
+            print(f"   📱 SMS sent to: {sms_info.get('sent_to', 'N/A')}")
+        return success
+
 def main():
     """Run all API tests"""
     print("🚀 Starting LFD Clock API Tests")
@@ -247,6 +375,8 @@ def main():
         ("Notification Logs", tester.test_notification_logs),
         ("Check Notifications", tester.test_check_notifications),
         ("Email Parsing", tester.test_email_parsing),
+        ("Direct PDF Upload", tester.test_direct_pdf_upload),
+        ("Test Email+SMS", tester.test_test_email_sms),
     ]
     
     shipment_id = None
@@ -258,9 +388,20 @@ def main():
         except Exception as e:
             print(f"❌ EXCEPTION in {test_name}: {str(e)}")
     
-    # Test shipment deletion if we created one
+    # Test shipment-specific functions if we have an ID
     if shipment_id:
-        tester.test_delete_shipment(shipment_id)
+        shipment_tests = [
+            ("Mark Picked Up", lambda: tester.test_mark_picked_up(shipment_id)),
+            ("Share with Trucker", lambda: tester.test_share_with_trucker(shipment_id)),
+            ("Carrier Portal", lambda: tester.test_carrier_portal(shipment_id)),
+            ("Delete Shipment", lambda: tester.test_delete_shipment(shipment_id))
+        ]
+        
+        for test_name, test_func in shipment_tests:
+            try:
+                test_func()
+            except Exception as e:
+                print(f"❌ EXCEPTION in {test_name}: {str(e)}")
 
     # Print final results
     print("\n" + "=" * 50)

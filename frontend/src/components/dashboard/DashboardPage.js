@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '@/context/AuthContext';
 import { useNavigate, Link, useLocation } from 'react-router-dom';
 import axios from 'axios';
@@ -46,7 +46,12 @@ import {
   Sparkles,
   Smartphone,
   Send,
-  Zap
+  Zap,
+  Upload,
+  DollarSign,
+  Truck,
+  ExternalLink,
+  CheckCircle
 } from 'lucide-react';
 
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
@@ -57,7 +62,7 @@ export const DashboardPage = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const [shipments, setShipments] = useState([]);
-  const [stats, setStats] = useState({ total: 0, safe: 0, warning: 0, critical: 0, expired: 0 });
+  const [stats, setStats] = useState({ total: 0, safe: 0, warning: 0, critical: 0, expired: 0, potential_fees_avoided: 0 });
   const [loading, setLoading] = useState(true);
   const [copied, setCopied] = useState(false);
   const [addDialogOpen, setAddDialogOpen] = useState(false);
@@ -218,6 +223,26 @@ export const DashboardPage = () => {
               </div>
             </div>
 
+            {/* Savings Counter */}
+            {stats.potential_fees_avoided > 0 && (
+              <Card className="mb-6 border-emerald-200 bg-gradient-to-r from-emerald-50 to-green-50">
+                <CardContent className="py-4">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 bg-emerald-500 rounded-full flex items-center justify-center">
+                        <DollarSign className="w-5 h-5 text-white" />
+                      </div>
+                      <div>
+                        <p className="text-sm text-emerald-700 font-medium">Potential Fees Avoided</p>
+                        <p className="text-2xl font-bold text-emerald-800">${stats.potential_fees_avoided.toLocaleString()}</p>
+                      </div>
+                    </div>
+                    <p className="text-xs text-emerald-600">Based on $300/container demurrage rate</p>
+                  </div>
+                </CardContent>
+              </Card>
+            )}
+
             {/* Stats Cards */}
             <div className="grid grid-cols-2 md:grid-cols-5 gap-4 mb-8">
               <StatCard label="Total" value={stats.total} icon={Package} />
@@ -226,6 +251,9 @@ export const DashboardPage = () => {
               <StatCard label="Critical" value={stats.critical} icon={AlertTriangle} variant="critical" />
               <StatCard label="Expired" value={stats.expired} icon={AlertTriangle} variant="expired" />
             </div>
+
+            {/* Drag & Drop Upload Zone */}
+            <DragDropZone token={token} onSuccess={fetchData} />
 
             {/* Shipments Grid */}
             {loading ? (
@@ -240,7 +268,9 @@ export const DashboardPage = () => {
                   <ShipmentCard 
                     key={shipment.id} 
                     shipment={shipment} 
+                    token={token}
                     onDelete={() => deleteShipment(shipment.id)}
+                    onUpdate={fetchData}
                   />
                 ))}
               </div>
@@ -276,12 +306,67 @@ const StatCard = ({ label, value, icon: Icon, variant }) => {
   );
 };
 
-const ShipmentCard = ({ shipment, onDelete }) => {
+const ShipmentCard = ({ shipment, token, onDelete, onUpdate }) => {
+  const [showTruckerDialog, setShowTruckerDialog] = useState(false);
+  const [truckerPhone, setTruckerPhone] = useState('');
+  const [truckerName, setTruckerName] = useState('');
+  const [sendingToTrucker, setSendingToTrucker] = useState(false);
+  const [markingPickedUp, setMarkingPickedUp] = useState(false);
+
   const statusBorderColors = {
     safe: 'border-l-emerald-500',
     warning: 'border-l-amber-500',
     critical: 'border-l-red-500',
     expired: 'border-l-slate-400'
+  };
+
+  const handleShareWithTrucker = async () => {
+    if (!truckerPhone) return;
+    setSendingToTrucker(true);
+    try {
+      await axios.post(
+        `${API}/shipments/${shipment.id}/share-trucker`,
+        { shipment_id: shipment.id, trucker_phone: truckerPhone, trucker_name: truckerName },
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+      toast.success('LFD details sent to trucker!');
+      setShowTruckerDialog(false);
+      setTruckerPhone('');
+      setTruckerName('');
+    } catch (error) {
+      toast.error(error.response?.data?.detail || 'Failed to send');
+    } finally {
+      setSendingToTrucker(false);
+    }
+  };
+
+  const handleMarkPickedUp = async () => {
+    setMarkingPickedUp(true);
+    try {
+      const response = await axios.post(
+        `${API}/shipments/${shipment.id}/mark-picked-up`,
+        {},
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+      toast.success(`Container picked up! $${response.data.fees_avoided} saved!`);
+      onUpdate();
+    } catch (error) {
+      toast.error(error.response?.data?.detail || 'Failed to update');
+    } finally {
+      setMarkingPickedUp(false);
+    }
+  };
+
+  const openCarrierPortal = async () => {
+    try {
+      const response = await axios.get(
+        `${API}/shipments/${shipment.id}/carrier-portal`,
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+      window.open(response.data.portal_url, '_blank');
+    } catch (error) {
+      window.open('https://www.google.com/search?q=container+tracking', '_blank');
+    }
   };
 
   return (
@@ -298,16 +383,22 @@ const ShipmentCard = ({ shipment, onDelete }) => {
               <StatusBadge status={shipment.status}>
                 {shipment.status.charAt(0).toUpperCase() + shipment.status.slice(1)}
               </StatusBadge>
-              {shipment.source !== 'manual' && (
+              {shipment.picked_up && (
+                <span className="text-xs bg-emerald-100 text-emerald-700 px-2 py-0.5 rounded-sm flex items-center gap-1">
+                  <CheckCircle className="w-3 h-3" /> Picked Up
+                </span>
+              )}
+              {shipment.source && shipment.source !== 'manual' && (
                 <span className="text-xs bg-slate-100 text-slate-600 px-2 py-0.5 rounded-sm">
-                  {shipment.source === 'email' ? 'Email Parsed' : 'Demo'}
+                  {shipment.source === 'email' || shipment.source === 'pdf_attachment' ? 'Email Parsed' : 
+                   shipment.source === 'direct_upload' ? 'Uploaded' : shipment.source}
                 </span>
               )}
             </div>
             <p className="text-slate-600 font-medium">{shipment.vessel_name}</p>
-            <p className="text-sm text-muted-foreground">
-              Arrival: {new Date(shipment.arrival_date).toLocaleDateString()}
-            </p>
+            {shipment.carrier && (
+              <p className="text-sm text-muted-foreground">Carrier: {shipment.carrier}</p>
+            )}
           </div>
 
           {/* Center: Countdown */}
@@ -317,25 +408,104 @@ const ShipmentCard = ({ shipment, onDelete }) => {
           </div>
 
           {/* Right: LFD Date & Actions */}
-          <div className="flex items-center gap-4">
-            <div className="text-right">
+          <div className="flex items-center gap-2">
+            <div className="text-right mr-2">
               <p className="text-xs text-muted-foreground uppercase tracking-wide">Last Free Day</p>
               <p className="font-mono font-medium">
                 {new Date(shipment.last_free_day).toLocaleDateString()}
               </p>
-              <p className="text-xs text-muted-foreground">
-                {new Date(shipment.last_free_day).toLocaleTimeString()}
-              </p>
             </div>
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={onDelete}
-              className="text-muted-foreground hover:text-red-600"
-              data-testid={`delete-shipment-${shipment.container_number}`}
-            >
-              <Trash2 className="w-4 h-4" />
-            </Button>
+            
+            {/* Action Buttons */}
+            <div className="flex items-center gap-1">
+              {/* Carrier Portal */}
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={openCarrierPortal}
+                className="text-muted-foreground hover:text-blue-600"
+                title="Open carrier portal"
+              >
+                <ExternalLink className="w-4 h-4" />
+              </Button>
+
+              {/* Share with Trucker */}
+              <Dialog open={showTruckerDialog} onOpenChange={setShowTruckerDialog}>
+                <DialogTrigger asChild>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="text-muted-foreground hover:text-amber-600"
+                    title="Share with trucker"
+                  >
+                    <Truck className="w-4 h-4" />
+                  </Button>
+                </DialogTrigger>
+                <DialogContent className="sm:max-w-md">
+                  <DialogHeader>
+                    <DialogTitle>Share with Trucker</DialogTitle>
+                    <DialogDescription>
+                      Send LFD details to your trucking company via SMS
+                    </DialogDescription>
+                  </DialogHeader>
+                  <div className="space-y-4 py-4">
+                    <div className="bg-slate-50 p-3 rounded-sm">
+                      <p className="font-mono text-sm">{shipment.container_number}</p>
+                      <p className="text-sm text-muted-foreground">LFD: {new Date(shipment.last_free_day).toLocaleDateString()}</p>
+                    </div>
+                    <div className="space-y-2">
+                      <Label>Trucker Phone Number</Label>
+                      <Input
+                        placeholder="+1234567890"
+                        value={truckerPhone}
+                        onChange={(e) => setTruckerPhone(e.target.value)}
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label>Trucker Name (Optional)</Label>
+                      <Input
+                        placeholder="Driver name"
+                        value={truckerName}
+                        onChange={(e) => setTruckerName(e.target.value)}
+                      />
+                    </div>
+                    <Button 
+                      onClick={handleShareWithTrucker} 
+                      disabled={sendingToTrucker || !truckerPhone}
+                      className="w-full"
+                    >
+                      {sendingToTrucker ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4 mr-2" />}
+                      Send to Trucker
+                    </Button>
+                  </div>
+                </DialogContent>
+              </Dialog>
+
+              {/* Mark as Picked Up */}
+              {!shipment.picked_up && shipment.status !== 'expired' && (
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  onClick={handleMarkPickedUp}
+                  disabled={markingPickedUp}
+                  className="text-muted-foreground hover:text-emerald-600"
+                  title="Mark as picked up"
+                >
+                  {markingPickedUp ? <Loader2 className="w-4 h-4 animate-spin" /> : <CheckCircle className="w-4 h-4" />}
+                </Button>
+              )}
+
+              {/* Delete */}
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={onDelete}
+                className="text-muted-foreground hover:text-red-600"
+                data-testid={`delete-shipment-${shipment.container_number}`}
+              >
+                <Trash2 className="w-4 h-4" />
+              </Button>
+            </div>
           </div>
         </div>
       </CardContent>
@@ -351,7 +521,7 @@ const EmptyState = ({ onSeedDemo, seedingDemo }) => (
       </div>
       <h3 className="text-xl font-bold mb-2">No Shipments Yet</h3>
       <p className="text-muted-foreground mb-6 max-w-md mx-auto">
-        Forward your freight notifications to your unique email address, or add shipments manually.
+        Drop a PDF above, forward emails to your inbound address, or add shipments manually.
       </p>
       <Button onClick={onSeedDemo} disabled={seedingDemo} data-testid="empty-seed-demo-btn">
         {seedingDemo ? (
@@ -364,6 +534,145 @@ const EmptyState = ({ onSeedDemo, seedingDemo }) => (
     </CardContent>
   </Card>
 );
+
+const DragDropZone = ({ token, onSuccess }) => {
+  const [isDragging, setIsDragging] = useState(false);
+  const [uploading, setUploading] = useState(false);
+  const [result, setResult] = useState(null);
+
+  const handleDragOver = useCallback((e) => {
+    e.preventDefault();
+    setIsDragging(true);
+  }, []);
+
+  const handleDragLeave = useCallback((e) => {
+    e.preventDefault();
+    setIsDragging(false);
+  }, []);
+
+  const handleDrop = useCallback(async (e) => {
+    e.preventDefault();
+    setIsDragging(false);
+    
+    const files = e.dataTransfer?.files;
+    if (files && files.length > 0) {
+      await uploadFile(files[0]);
+    }
+  }, [token]);
+
+  const handleFileSelect = async (e) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      await uploadFile(file);
+    }
+  };
+
+  const uploadFile = async (file) => {
+    if (!file.name.toLowerCase().endsWith('.pdf')) {
+      toast.error('Please upload a PDF file');
+      return;
+    }
+
+    setUploading(true);
+    setResult(null);
+
+    try {
+      const formData = new FormData();
+      formData.append('file', file);
+
+      const response = await axios.post(`${API}/upload/pdf`, formData, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+          'Content-Type': 'multipart/form-data'
+        }
+      });
+
+      setResult(response.data);
+      
+      if (response.data.status === 'success') {
+        toast.success(`Container ${response.data.container_id} ${response.data.action === 'updated' ? 'updated' : 'added'}!`);
+        onSuccess();
+      } else {
+        toast.error(response.data.reason || 'Failed to parse PDF');
+      }
+    } catch (error) {
+      toast.error(error.response?.data?.detail || 'Upload failed');
+      setResult({ status: 'error', reason: error.response?.data?.detail || 'Upload failed' });
+    } finally {
+      setUploading(false);
+    }
+  };
+
+  return (
+    <div className="mb-6">
+      <div
+        onDragOver={handleDragOver}
+        onDragLeave={handleDragLeave}
+        onDrop={handleDrop}
+        className={`
+          border-2 border-dashed rounded-lg p-8 text-center transition-all cursor-pointer
+          ${isDragging 
+            ? 'border-emerald-500 bg-emerald-50' 
+            : 'border-slate-300 hover:border-slate-400 hover:bg-slate-50'
+          }
+          ${uploading ? 'opacity-50 pointer-events-none' : ''}
+        `}
+      >
+        <input
+          type="file"
+          accept=".pdf"
+          onChange={handleFileSelect}
+          className="hidden"
+          id="pdf-upload"
+          disabled={uploading}
+        />
+        <label htmlFor="pdf-upload" className="cursor-pointer">
+          {uploading ? (
+            <div className="flex flex-col items-center gap-3">
+              <Loader2 className="w-10 h-10 text-emerald-500 animate-spin" />
+              <p className="text-slate-600 font-medium">Parsing PDF with AI...</p>
+              <p className="text-sm text-muted-foreground">This takes about 15 seconds</p>
+            </div>
+          ) : (
+            <div className="flex flex-col items-center gap-3">
+              <div className={`w-14 h-14 rounded-full flex items-center justify-center ${isDragging ? 'bg-emerald-100' : 'bg-slate-100'}`}>
+                <Upload className={`w-7 h-7 ${isDragging ? 'text-emerald-600' : 'text-slate-400'}`} />
+              </div>
+              <div>
+                <p className="text-slate-700 font-medium">
+                  {isDragging ? 'Drop PDF here' : 'Drag & Drop PDF'}
+                </p>
+                <p className="text-sm text-muted-foreground">
+                  or click to browse
+                </p>
+              </div>
+            </div>
+          )}
+        </label>
+      </div>
+
+      {result && (
+        <div className={`mt-3 p-3 rounded-sm text-sm ${
+          result.status === 'success' 
+            ? 'bg-emerald-50 border border-emerald-200 text-emerald-700' 
+            : 'bg-red-50 border border-red-200 text-red-700'
+        }`}>
+          {result.status === 'success' ? (
+            <div className="flex items-center gap-2">
+              <Check className="w-4 h-4" />
+              <span>Container <strong>{result.container_id}</strong> {result.action === 'updated' ? 'updated' : 'added'} - LFD: {result.lfd}</span>
+            </div>
+          ) : (
+            <div className="flex items-center gap-2">
+              <AlertTriangle className="w-4 h-4" />
+              <span>{result.reason}</span>
+            </div>
+          )}
+        </div>
+      )}
+    </div>
+  );
+};
 
 const AddShipmentDialog = ({ open, onOpenChange, token, onSuccess }) => {
   const [formData, setFormData] = useState({
