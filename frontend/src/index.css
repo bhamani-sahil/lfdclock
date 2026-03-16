@@ -120,31 +120,40 @@
    NEXT-GEN LANDING PAGE STYLES
    ======================================== */
 
-/* Landing page dark theme variables */
-.landing-dark {
-  --landing-bg: #0B0B0B;
-  --landing-surface: #111111;
-  --landing-surface-hover: #1A1A1A;
-  --landing-border: #222222;
+/* Landing page paper/cream theme variables */
+.landing-paper {
+  --landing-bg: #FAF7F2;
+  --landing-surface: #FFFFFF;
+  --landing-surface-hover: #F5F1E8;
+  --landing-border: #E8E2D9;
   --landing-accent: #FF4F00;
-  --landing-accent-glow: rgba(255, 79, 0, 0.4);
-  --landing-text: #FFFFFF;
-  --landing-text-muted: #888888;
-  --landing-text-dim: #666666;
+  --landing-accent-glow: rgba(255, 79, 0, 0.3);
+  --landing-text: #1A1A1A;
+  --landing-text-muted: #666666;
+  --landing-text-dim: #888888;
 }
 
-/* Glass morphism card */
+/* Orange accent for app-wide use */
+:root {
+  --accent-orange: #FF4F00;
+  --accent-orange-hover: #E64500;
+  --accent-orange-light: rgba(255, 79, 0, 0.1);
+}
+
+/* Glass morphism card - paper theme */
 .glass-card {
-  background: rgba(255, 255, 255, 0.03);
+  background: rgba(255, 255, 255, 0.8);
   backdrop-filter: blur(16px);
   -webkit-backdrop-filter: blur(16px);
-  border: 1px solid rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(0, 0, 0, 0.06);
+  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.04);
   transition: all 0.3s ease;
 }
 
 .glass-card:hover {
-  background: rgba(255, 255, 255, 0.06);
-  border-color: rgba(255, 255, 255, 0.12);
+  background: rgba(255, 255, 255, 0.95);
+  border-color: rgba(255, 79, 0, 0.2);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.08);
   transform: translateY(-4px);
 }
 
@@ -177,32 +186,33 @@
   opacity: 1;
 }
 
-/* Ghost button for dark theme */
-.btn-ghost-dark {
+/* Ghost button for paper theme */
+.btn-ghost-paper {
   background: transparent;
-  color: #888888;
-  border: 1px solid #333333;
+  color: #666666;
+  border: 1px solid #E8E2D9;
   transition: all 0.3s ease;
 }
 
-.btn-ghost-dark:hover {
-  color: #FFFFFF;
+.btn-ghost-paper:hover {
+  color: #1A1A1A;
   border-color: #FF4F00;
-  background: rgba(255, 79, 0, 0.1);
+  background: rgba(255, 79, 0, 0.05);
 }
 
-/* Hero gradient text */
+/* Hero gradient text - paper theme */
 .text-gradient-hero {
-  background: linear-gradient(135deg, #FF4F00 0%, #FF6B2C 30%, #FFFFFF 100%);
+  background: linear-gradient(135deg, #FF4F00 0%, #FF6B2C 50%, #1A1A1A 100%);
   -webkit-background-clip: text;
   background-clip: text;
   -webkit-text-fill-color: transparent;
 }
 
-/* Pricing card glow */
+/* Pricing card - paper theme */
 .pricing-card {
-  background: rgba(17, 17, 17, 0.8);
-  border: 1px solid #222222;
+  background: #FFFFFF;
+  border: 1px solid #E8E2D9;
+  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.04);
   transition: all 0.4s ease;
   position: relative;
 }
@@ -212,14 +222,15 @@
   position: absolute;
   inset: -1px;
   border-radius: inherit;
-  background: linear-gradient(135deg, transparent, rgba(255, 79, 0, 0.3), transparent);
+  background: linear-gradient(135deg, transparent, rgba(255, 79, 0, 0.15), transparent);
   opacity: 0;
   transition: opacity 0.4s ease;
   z-index: -1;
 }
 
 .pricing-card:hover {
-  border-color: rgba(255, 79, 0, 0.5);
+  border-color: rgba(255, 79, 0, 0.4);
+  box-shadow: 0 12px 40px rgba(255, 79, 0, 0.1);
   transform: translateY(-8px);
 }
 
@@ -229,7 +240,7 @@
 
 .pricing-card.featured {
   border-color: #FF4F00;
-  box-shadow: 0 0 40px rgba(255, 79, 0, 0.2);
+  box-shadow: 0 8px 32px rgba(255, 79, 0, 0.15);
 }
 
 .pricing-card.featured::before {
@@ -259,22 +270,22 @@
   background: rgba(255, 79, 0, 0.1);
 }
 
-/* Subtle grid background */
+/* Subtle grid background - paper theme */
 .bg-grid-pattern {
   background-image: 
-    linear-gradient(rgba(255, 255, 255, 0.02) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(255, 255, 255, 0.02) 1px, transparent 1px);
+    linear-gradient(rgba(0, 0, 0, 0.02) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(0, 0, 0, 0.02) 1px, transparent 1px);
   background-size: 60px 60px;
 }
 
-/* Radial glow effect */
+/* Radial glow effect - paper theme */
 .radial-glow {
   position: absolute;
   width: 600px;
   height: 600px;
-  background: radial-gradient(circle, rgba(255, 79, 0, 0.15) 0%, transparent 70%);
+  background: radial-gradient(circle, rgba(255, 79, 0, 0.08) 0%, transparent 70%);
   pointer-events: none;
-  filter: blur(40px);
+  filter: blur(60px);
 }
 
 /* Carrier logo strip animation */
@@ -298,7 +309,7 @@
 
 .glass-card:hover .feature-icon {
   background: #FF4F00;
-  box-shadow: 0 0 20px rgba(255, 79, 0, 0.5);
+  box-shadow: 0 0 20px rgba(255, 79, 0, 0.4);
 }
 
 /* Footer link hover */
@@ -319,9 +330,46 @@
 }
 
 .footer-link:hover {
-  color: #FFFFFF;
+  color: #1A1A1A;
 }
 
 .footer-link:hover::after {
   width: 100%;
+}
+
+/* Infinite Marquee Animation */
+@keyframes marquee {
+  0% {
+    transform: translateX(0);
+  }
+  100% {
+    transform: translateX(-50%);
+  }
+}
+
+.animate-marquee {
+  animation: marquee 25s linear infinite;
+}
+
+.animate-marquee:hover {
+  animation-play-state: paused;
+}
+
+/* Orange accent button for auth/dashboard */
+.btn-accent-orange {
+  background: linear-gradient(135deg, #FF4F00, #FF6B2C);
+  color: white;
+  font-weight: 600;
+  transition: all 0.3s ease;
+}
+
+.btn-accent-orange:hover {
+  box-shadow: 0 4px 20px rgba(255, 79, 0, 0.4);
+  transform: translateY(-1px);
+}
+
+/* Orange focus ring for inputs */
+.input-orange-focus:focus {
+  border-color: #FF4F00 !important;
+  box-shadow: 0 0 0 2px rgba(255, 79, 0, 0.1) !important;
 }

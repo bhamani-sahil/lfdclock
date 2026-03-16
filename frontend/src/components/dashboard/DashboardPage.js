@@ -129,13 +129,13 @@ export const DashboardPage = () => {
   };
 
   return (
-    <div className="min-h-screen bg-slate-50">
+    <div className="min-h-screen bg-[#FAF7F2]">
       {/* Navigation */}
-      <nav className="bg-white border-b border-slate-200 sticky top-0 z-50">
+      <nav className="bg-white border-b border-[#E8E2D9] sticky top-0 z-50">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center h-16">
             <Link to="/dashboard" className="flex items-center gap-2">
-              <div className="w-9 h-9 bg-primary rounded-sm flex items-center justify-center">
+              <div className="w-9 h-9 bg-[#FF4F00] rounded-lg flex items-center justify-center">
                 <Ship className="w-5 h-5 text-white" />
               </div>
               <span className="font-bold text-xl tracking-tight">LFD Clock</span>
@@ -143,18 +143,18 @@ export const DashboardPage = () => {
 
             <div className="flex items-center gap-4">
               {/* Inbound Email */}
-              <div className="hidden md:flex items-center gap-2 bg-emerald-50 border border-emerald-200 px-3 py-1.5 rounded-sm">
-                <Mail className="w-4 h-4 text-emerald-600" />
-                <code className="text-sm font-mono text-emerald-700">{user?.inbound_email || user?.forwarding_email}</code>
+              <div className="hidden md:flex items-center gap-2 bg-[#FF4F00]/10 border border-[#FF4F00]/30 px-3 py-1.5 rounded-lg">
+                <Mail className="w-4 h-4 text-[#FF4F00]" />
+                <code className="text-sm font-mono text-[#FF4F00]">{user?.inbound_email || user?.forwarding_email}</code>
                 <button
                   onClick={copyEmail}
-                  className="p-1 hover:bg-emerald-100 rounded-sm transition-colors"
+                  className="p-1 hover:bg-[#FF4F00]/20 rounded transition-colors"
                   data-testid="copy-fwd-email-btn"
                 >
                   {copied ? (
-                    <Check className="w-3.5 h-3.5 text-emerald-500" />
+                    <Check className="w-3.5 h-3.5 text-[#FF4F00]" />
                   ) : (
-                    <Copy className="w-3.5 h-3.5 text-emerald-600" />
+                    <Copy className="w-3.5 h-3.5 text-[#FF4F00]" />
                   )}
                 </button>
               </div>
@@ -226,19 +226,19 @@ export const DashboardPage = () => {
 
             {/* Savings Counter */}
             {stats.potential_fees_avoided > 0 && (
-              <Card className="mb-6 border-emerald-200 bg-gradient-to-r from-emerald-50 to-green-50">
+              <Card className="mb-6 border-[#FF4F00]/30 bg-gradient-to-r from-[#FF4F00]/10 to-orange-50">
                 <CardContent className="py-4">
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-3">
-                      <div className="w-10 h-10 bg-emerald-500 rounded-full flex items-center justify-center">
+                      <div className="w-10 h-10 bg-[#FF4F00] rounded-full flex items-center justify-center">
                         <DollarSign className="w-5 h-5 text-white" />
                       </div>
                       <div>
-                        <p className="text-sm text-emerald-700 font-medium">Potential Fees Avoided</p>
-                        <p className="text-2xl font-bold text-emerald-800">${stats.potential_fees_avoided.toLocaleString()}</p>
+                        <p className="text-sm text-[#FF4F00] font-medium">Potential Fees Avoided</p>
+                        <p className="text-2xl font-bold text-[#1A1A1A]">${stats.potential_fees_avoided.toLocaleString()}</p>
                       </div>
                     </div>
-                    <p className="text-xs text-emerald-600">Based on $300/container demurrage rate</p>
+                    <p className="text-xs text-[#FF4F00]/70">Based on $300/container demurrage rate</p>
                   </div>
                 </CardContent>
               </Card>
@@ -257,12 +257,12 @@ export const DashboardPage = () => {
             <DragDropZone token={token} onSuccess={fetchData} />
 
             {/* Tabs */}
-            <div className="flex gap-2 mb-4 border-b border-slate-200">
+            <div className="flex gap-2 mb-4 border-b border-[#E8E2D9]">
               <button
                 onClick={() => setActiveTab('active')}
                 className={`px-4 py-2 text-sm font-medium transition-colors ${
                   activeTab === 'active' 
-                    ? 'text-primary border-b-2 border-primary' 
+                    ? 'text-[#FF4F00] border-b-2 border-[#FF4F00]' 
                     : 'text-muted-foreground hover:text-foreground'
                 }`}
               >
@@ -282,7 +282,7 @@ export const DashboardPage = () => {
                 onClick={() => setActiveTab('all')}
                 className={`px-4 py-2 text-sm font-medium transition-colors ${
                   activeTab === 'all' 
-                    ? 'text-primary border-b-2 border-primary' 
+                    ? 'text-[#FF4F00] border-b-2 border-[#FF4F00]' 
                     : 'text-muted-foreground hover:text-foreground'
                 }`}
               >
@@ -676,8 +676,8 @@ const DragDropZone = ({ token, onSuccess }) => {
         className={`
           border-2 border-dashed rounded-lg p-8 text-center transition-all cursor-pointer
           ${isDragging 
-            ? 'border-emerald-500 bg-emerald-50' 
-            : 'border-slate-300 hover:border-slate-400 hover:bg-slate-50'
+            ? 'border-[#FF4F00] bg-[#FF4F00]/10' 
+            : 'border-[#E8E2D9] hover:border-[#FF4F00]/50 hover:bg-[#FF4F00]/5'
           }
           ${uploading ? 'opacity-50 pointer-events-none' : ''}
         `}
@@ -693,17 +693,17 @@ const DragDropZone = ({ token, onSuccess }) => {
         <label htmlFor="pdf-upload" className="cursor-pointer">
           {uploading ? (
             <div className="flex flex-col items-center gap-3">
-              <Loader2 className="w-10 h-10 text-emerald-500 animate-spin" />
-              <p className="text-slate-600 font-medium">Parsing PDF with AI...</p>
+              <Loader2 className="w-10 h-10 text-[#FF4F00] animate-spin" />
+              <p className="text-[#1A1A1A] font-medium">Parsing PDF with AI...</p>
               <p className="text-sm text-muted-foreground">This takes about 15 seconds</p>
             </div>
           ) : (
             <div className="flex flex-col items-center gap-3">
-              <div className={`w-14 h-14 rounded-full flex items-center justify-center ${isDragging ? 'bg-emerald-100' : 'bg-slate-100'}`}>
-                <Upload className={`w-7 h-7 ${isDragging ? 'text-emerald-600' : 'text-slate-400'}`} />
+              <div className={`w-14 h-14 rounded-full flex items-center justify-center ${isDragging ? 'bg-[#FF4F00]/20' : 'bg-[#F5F1E8]'}`}>
+                <Upload className={`w-7 h-7 ${isDragging ? 'text-[#FF4F00]' : 'text-[#888888]'}`} />
               </div>
               <div>
-                <p className="text-slate-700 font-medium">
+                <p className="text-[#1A1A1A] font-medium">
                   {isDragging ? 'Drop PDF here' : 'Drag & Drop PDF'}
                 </p>
                 <p className="text-sm text-muted-foreground">
@@ -716,9 +716,9 @@ const DragDropZone = ({ token, onSuccess }) => {
       </div>
 
       {result && (
-        <div className={`mt-3 p-3 rounded-sm text-sm ${
+        <div className={`mt-3 p-3 rounded-lg text-sm ${
           result.status === 'success' 
-            ? 'bg-emerald-50 border border-emerald-200 text-emerald-700' 
+            ? 'bg-[#FF4F00]/10 border border-[#FF4F00]/30 text-[#FF4F00]' 
             : 'bg-red-50 border border-red-200 text-red-700'
         }`}>
           {result.status === 'success' ? (
@@ -784,7 +784,7 @@ const AddShipmentDialog = ({ open, onOpenChange, token, onSuccess }) => {
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogTrigger asChild>
-        <Button className="btn-industrial" data-testid="add-shipment-btn">
+        <Button className="btn-accent-glow rounded-lg" data-testid="add-shipment-btn">
           <Plus className="w-4 h-4 mr-2" />
           Add Shipment
         </Button>
@@ -803,7 +803,7 @@ const AddShipmentDialog = ({ open, onOpenChange, token, onSuccess }) => {
               onChange={(e) => setFormData({ ...formData, container_number: e.target.value })}
               required
               data-testid="add-container-input"
-              className="font-mono"
+              className="font-mono border-[#E8E2D9] focus:border-[#FF4F00]"
             />
           </div>
           <div className="space-y-2">
@@ -815,6 +815,7 @@ const AddShipmentDialog = ({ open, onOpenChange, token, onSuccess }) => {
               onChange={(e) => setFormData({ ...formData, vessel_name: e.target.value })}
               required
               data-testid="add-vessel-input"
+              className="border-[#E8E2D9] focus:border-[#FF4F00]"
             />
           </div>
           <div className="space-y-2">
@@ -826,6 +827,7 @@ const AddShipmentDialog = ({ open, onOpenChange, token, onSuccess }) => {
               onChange={(e) => setFormData({ ...formData, arrival_date: e.target.value })}
               required
               data-testid="add-arrival-input"
+              className="border-[#E8E2D9] focus:border-[#FF4F00]"
             />
           </div>
           <div className="space-y-2">
@@ -837,6 +839,7 @@ const AddShipmentDialog = ({ open, onOpenChange, token, onSuccess }) => {
               onChange={(e) => setFormData({ ...formData, last_free_day: e.target.value })}
               required
               data-testid="add-lfd-input"
+              className="border-[#E8E2D9] focus:border-[#FF4F00]"
             />
           </div>
           <div className="space-y-2">
@@ -847,6 +850,7 @@ const AddShipmentDialog = ({ open, onOpenChange, token, onSuccess }) => {
               value={formData.notes}
               onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
               data-testid="add-notes-input"
+              className="border-[#E8E2D9] focus:border-[#FF4F00]"
             />
           </div>
           <div className="flex gap-3 pt-4">
@@ -861,7 +865,7 @@ const AddShipmentDialog = ({ open, onOpenChange, token, onSuccess }) => {
             <Button
               type="submit"
               disabled={loading}
-              className="flex-1 btn-industrial"
+              className="flex-1 btn-accent-glow rounded-lg"
               data-testid="add-shipment-submit-btn"
             >
               {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Add Shipment'}
@@ -925,7 +929,7 @@ Shipping Line`;
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
-        <Button variant="outline" className="bg-emerald-50 border-emerald-200 text-emerald-700 hover:bg-emerald-100" data-testid="test-sms-btn">
+        <Button variant="outline" className="bg-[#FF4F00]/10 border-[#FF4F00]/30 text-[#FF4F00] hover:bg-[#FF4F00]/20" data-testid="test-sms-btn">
           <Zap className="w-4 h-4 mr-2" />
           Test SMS
         </Button>
@@ -933,7 +937,7 @@ Shipping Line`;
       <DialogContent className="sm:max-w-lg">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
-            <Smartphone className="w-5 h-5 text-emerald-600" />
+            <Smartphone className="w-5 h-5 text-[#FF4F00]" />
             Test Email Parse + Real SMS
           </DialogTitle>
           <DialogDescription>
@@ -950,7 +954,7 @@ Shipping Line`;
               onChange={(e) => setPhoneNumber(e.target.value)}
               required
               data-testid="test-phone-input"
-              className="font-mono"
+              className="font-mono border-[#E8E2D9] focus:border-[#FF4F00]"
             />
             <p className="text-xs text-muted-foreground">Include country code (e.g., +1 for US, +91 for India)</p>
           </div>
@@ -962,7 +966,7 @@ Shipping Line`;
                 variant="ghost"
                 size="sm"
                 onClick={() => setEmailContent(sampleEmail)}
-                className="text-xs"
+                className="text-xs text-[#FF4F00]"
               >
                 Load Sample
               </Button>
@@ -975,27 +979,27 @@ Shipping Line`;
               required
               rows={8}
               data-testid="test-email-input"
-              className="font-mono text-sm"
+              className="font-mono text-sm border-[#E8E2D9] focus:border-[#FF4F00]"
             />
           </div>
           
           {result && (
-            <div className={`p-4 rounded-sm text-sm ${result.error ? 'bg-red-50 border border-red-200' : result.action === 'updated' ? 'bg-amber-50 border border-amber-200' : 'bg-emerald-50 border border-emerald-200'}`}>
+            <div className={`p-4 rounded-lg text-sm ${result.error ? 'bg-red-50 border border-red-200' : result.action === 'updated' ? 'bg-amber-50 border border-amber-200' : 'bg-[#FF4F00]/10 border border-[#FF4F00]/30'}`}>
               {result.error ? (
                 <p className="text-red-700">{result.error}</p>
               ) : (
                 <div className="space-y-2">
-                  <p className={`font-medium flex items-center gap-2 ${result.action === 'updated' ? 'text-amber-700' : 'text-emerald-700'}`}>
+                  <p className={`font-medium flex items-center gap-2 ${result.action === 'updated' ? 'text-amber-700' : 'text-[#FF4F00]'}`}>
                     <Check className="w-4 h-4" /> 
                     {result.action === 'updated' ? 'Shipment UPDATED & SMS Sent!' : 'New Shipment Created & SMS Sent!'}
                   </p>
-                  <p className={result.action === 'updated' ? 'text-amber-600' : 'text-emerald-600'}>
+                  <p className={result.action === 'updated' ? 'text-amber-600' : 'text-[#FF4F00]/80'}>
                     Container: {result.parsed_data?.container_number}
                   </p>
-                  <p className={result.action === 'updated' ? 'text-amber-600' : 'text-emerald-600'}>
+                  <p className={result.action === 'updated' ? 'text-amber-600' : 'text-[#FF4F00]/80'}>
                     LFD: {result.parsed_data?.last_free_day?.substring(0, 10)}
                   </p>
-                  <p className={result.action === 'updated' ? 'text-amber-600' : 'text-emerald-600'}>
+                  <p className={result.action === 'updated' ? 'text-amber-600' : 'text-[#FF4F00]/80'}>
                     Sent to: {result.sms?.sent_to}
                   </p>
                 </div>
@@ -1015,7 +1019,7 @@ Shipping Line`;
             <Button
               type="submit"
               disabled={loading}
-              className="flex-1 bg-emerald-600 hover:bg-emerald-700"
+              className="flex-1 btn-accent-glow rounded-lg"
               data-testid="test-sms-submit-btn"
             >
               {loading ? (

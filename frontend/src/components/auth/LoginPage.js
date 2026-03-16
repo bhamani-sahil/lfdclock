@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Ship, ArrowRight, Loader2 } from 'lucide-react';
+import { Anchor, ArrowRight, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
 
 export const LoginPage = () => {
@@ -39,22 +39,22 @@ export const LoginPage = () => {
           backgroundImage: `url('https://images.unsplash.com/photo-1770238623857-4cee6f0bdc3b?crop=entropy&cs=srgb&fm=jpg&ixid=M3w4NTYxOTB8MHwxfHNlYXJjaHwxfHxzaGlwcGluZyUyMHBvcnQlMjBjcmFuZXMlMjBzdW5zZXQlMjBpbmR1c3RyaWFsfGVufDB8fHx8MTc3MzE4NjE1NHww&ixlib=rb-4.1.0&q=85')`
         }}
       >
-        <div className="absolute inset-0 bg-slate-900/70" />
+        <div className="absolute inset-0 bg-gradient-to-br from-[#FF4F00]/80 to-slate-900/90" />
         <div className="relative z-10 flex flex-col justify-end p-12 text-white">
           <h2 className="text-3xl font-bold mb-4">Never Miss a Last Free Day</h2>
-          <p className="text-slate-300 text-lg">
+          <p className="text-white/80 text-lg">
             Automated LFD tracking and notifications to protect your bottom line from demurrage charges.
           </p>
         </div>
       </div>
 
       {/* Right side - Form */}
-      <div className="flex-1 flex items-center justify-center p-8 bg-slate-50">
-        <Card className="w-full max-w-md shadow-sm border-slate-200">
+      <div className="flex-1 flex items-center justify-center p-8 bg-[#FAF7F2]">
+        <Card className="w-full max-w-md shadow-lg border-[#E8E2D9] bg-white">
           <CardHeader className="space-y-1 text-center">
             <div className="flex justify-center mb-4">
-              <div className="w-12 h-12 bg-primary rounded-sm flex items-center justify-center">
-                <Ship className="w-6 h-6 text-white" />
+              <div className="w-12 h-12 bg-[#FF4F00] rounded-lg flex items-center justify-center">
+                <Anchor className="w-6 h-6 text-white" />
               </div>
             </div>
             <CardTitle className="text-2xl font-bold tracking-tight">
@@ -76,7 +76,7 @@ export const LoginPage = () => {
                   onChange={(e) => setEmail(e.target.value)}
                   required
                   data-testid="login-email-input"
-                  className="h-11 bg-white border-2 border-slate-200 focus:border-primary"
+                  className="h-11 bg-white border-2 border-[#E8E2D9] focus:border-[#FF4F00] focus:ring-[#FF4F00]/20"
                 />
               </div>
               <div className="space-y-2">
@@ -89,12 +89,12 @@ export const LoginPage = () => {
                   onChange={(e) => setPassword(e.target.value)}
                   required
                   data-testid="login-password-input"
-                  className="h-11 bg-white border-2 border-slate-200 focus:border-primary"
+                  className="h-11 bg-white border-2 border-[#E8E2D9] focus:border-[#FF4F00] focus:ring-[#FF4F00]/20"
                 />
               </div>
               <Button
                 type="submit"
-                className="w-full h-11 btn-industrial"
+                className="w-full h-11 btn-accent-glow rounded-lg"
                 disabled={loading}
                 data-testid="login-submit-btn"
               >
@@ -113,7 +113,7 @@ export const LoginPage = () => {
               <span className="text-muted-foreground">Don't have an account? </span>
               <Link 
                 to="/signup" 
-                className="text-primary font-medium hover:underline"
+                className="text-[#FF4F00] font-medium hover:underline"
                 data-testid="signup-link"
               >
                 Sign up

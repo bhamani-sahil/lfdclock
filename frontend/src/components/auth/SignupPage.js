@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Ship, ArrowRight, Loader2, Copy, Check, Mail } from 'lucide-react';
+import { Anchor, ArrowRight, Loader2, Copy, Check, Mail } from 'lucide-react';
 import { toast } from 'sonner';
 
 export const SignupPage = () => {
@@ -45,11 +45,11 @@ export const SignupPage = () => {
 
   if (showOnboarding) {
     return (
-      <div className="min-h-screen flex items-center justify-center p-8 bg-slate-50">
-        <Card className="w-full max-w-lg shadow-sm border-slate-200">
+      <div className="min-h-screen flex items-center justify-center p-8 bg-[#FAF7F2]">
+        <Card className="w-full max-w-lg shadow-lg border-[#E8E2D9] bg-white">
           <CardHeader className="text-center">
             <div className="flex justify-center mb-4">
-              <div className="w-16 h-16 bg-emerald-500 rounded-sm flex items-center justify-center">
+              <div className="w-16 h-16 bg-[#FF4F00] rounded-lg flex items-center justify-center">
                 <Check className="w-8 h-8 text-white" />
               </div>
             </div>
@@ -61,36 +61,36 @@ export const SignupPage = () => {
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-6">
-            <div className="bg-emerald-50 border-2 border-emerald-200 rounded-sm p-4">
+            <div className="bg-[#FF4F00]/10 border-2 border-[#FF4F00]/30 rounded-lg p-4">
               <div className="flex items-center gap-2 mb-2">
-                <Mail className="w-4 h-4 text-emerald-600" />
-                <span className="text-sm font-medium text-emerald-700">
+                <Mail className="w-4 h-4 text-[#FF4F00]" />
+                <span className="text-sm font-medium text-[#FF4F00]">
                   Your Inbound Email
                 </span>
               </div>
               <div className="flex items-center gap-2">
-                <code className="flex-1 font-mono text-lg bg-white px-3 py-2 rounded-sm border border-emerald-200 text-emerald-800">
+                <code className="flex-1 font-mono text-lg bg-white px-3 py-2 rounded-lg border border-[#FF4F00]/20 text-[#1A1A1A]">
                   {forwardingEmail}
                 </code>
                 <Button
                   variant="outline"
                   size="icon"
                   onClick={copyEmail}
-                  className="shrink-0 border-emerald-300 hover:bg-emerald-100"
+                  className="shrink-0 border-[#FF4F00]/30 hover:bg-[#FF4F00]/10"
                   data-testid="copy-email-btn"
                 >
                   {copied ? (
-                    <Check className="w-4 h-4 text-emerald-500" />
+                    <Check className="w-4 h-4 text-[#FF4F00]" />
                   ) : (
-                    <Copy className="w-4 h-4 text-emerald-600" />
+                    <Copy className="w-4 h-4 text-[#FF4F00]" />
                   )}
                 </Button>
               </div>
             </div>
 
-            <div className="bg-slate-50 border border-slate-200 rounded-sm p-4">
-              <h4 className="font-medium text-slate-800 mb-2">How carriers send you LFD notices:</h4>
-              <ol className="text-sm text-slate-600 space-y-2 list-decimal list-inside">
+            <div className="bg-[#F5F1E8] border border-[#E8E2D9] rounded-lg p-4">
+              <h4 className="font-medium text-[#1A1A1A] mb-2">How carriers send you LFD notices:</h4>
+              <ol className="text-sm text-[#666666] space-y-2 list-decimal list-inside">
                 <li>Give this email to your shipping lines & forwarders</li>
                 <li>They email PDF arrival notices to this address</li>
                 <li>We parse the LFD and send you instant SMS alerts</li>
@@ -99,7 +99,7 @@ export const SignupPage = () => {
 
             <Button
               onClick={() => navigate('/dashboard')}
-              className="w-full h-11 btn-industrial"
+              className="w-full h-11 btn-accent-glow rounded-lg"
               data-testid="go-to-dashboard-btn"
             >
               Go to Dashboard
@@ -114,12 +114,12 @@ export const SignupPage = () => {
   return (
     <div className="min-h-screen flex">
       {/* Left side - Form */}
-      <div className="flex-1 flex items-center justify-center p-8 bg-slate-50">
-        <Card className="w-full max-w-md shadow-sm border-slate-200">
+      <div className="flex-1 flex items-center justify-center p-8 bg-[#FAF7F2]">
+        <Card className="w-full max-w-md shadow-lg border-[#E8E2D9] bg-white">
           <CardHeader className="space-y-1 text-center">
             <div className="flex justify-center mb-4">
-              <div className="w-12 h-12 bg-primary rounded-sm flex items-center justify-center">
-                <Ship className="w-6 h-6 text-white" />
+              <div className="w-12 h-12 bg-[#FF4F00] rounded-lg flex items-center justify-center">
+                <Anchor className="w-6 h-6 text-white" />
               </div>
             </div>
             <CardTitle className="text-2xl font-bold tracking-tight">
@@ -141,7 +141,7 @@ export const SignupPage = () => {
                   onChange={(e) => setCompanyName(e.target.value)}
                   required
                   data-testid="signup-company-input"
-                  className="h-11 bg-white border-2 border-slate-200 focus:border-primary"
+                  className="h-11 bg-white border-2 border-[#E8E2D9] focus:border-[#FF4F00] focus:ring-[#FF4F00]/20"
                 />
               </div>
               <div className="space-y-2">
@@ -154,7 +154,7 @@ export const SignupPage = () => {
                   onChange={(e) => setEmail(e.target.value)}
                   required
                   data-testid="signup-email-input"
-                  className="h-11 bg-white border-2 border-slate-200 focus:border-primary"
+                  className="h-11 bg-white border-2 border-[#E8E2D9] focus:border-[#FF4F00] focus:ring-[#FF4F00]/20"
                 />
               </div>
               <div className="space-y-2">
@@ -167,7 +167,7 @@ export const SignupPage = () => {
                   onChange={(e) => setPhone(e.target.value)}
                   required
                   data-testid="signup-phone-input"
-                  className="h-11 bg-white border-2 border-slate-200 focus:border-primary"
+                  className="h-11 bg-white border-2 border-[#E8E2D9] focus:border-[#FF4F00] focus:ring-[#FF4F00]/20"
                 />
                 <p className="text-xs text-muted-foreground">Include country code (e.g., +1 for US/Canada)</p>
               </div>
@@ -182,12 +182,12 @@ export const SignupPage = () => {
                   required
                   minLength={6}
                   data-testid="signup-password-input"
-                  className="h-11 bg-white border-2 border-slate-200 focus:border-primary"
+                  className="h-11 bg-white border-2 border-[#E8E2D9] focus:border-[#FF4F00] focus:ring-[#FF4F00]/20"
                 />
               </div>
               <Button
                 type="submit"
-                className="w-full h-11 btn-industrial"
+                className="w-full h-11 btn-accent-glow rounded-lg"
                 disabled={loading}
                 data-testid="signup-submit-btn"
               >
@@ -206,7 +206,7 @@ export const SignupPage = () => {
               <span className="text-muted-foreground">Already have an account? </span>
               <Link 
                 to="/login" 
-                className="text-primary font-medium hover:underline"
+                className="text-[#FF4F00] font-medium hover:underline"
                 data-testid="login-link"
               >
                 Sign in
@@ -223,10 +223,10 @@ export const SignupPage = () => {
           backgroundImage: `url('https://images.unsplash.com/photo-1769144256207-bc4bb75b29db?crop=entropy&cs=srgb&fm=jpg&ixid=M3w4NjA2MjJ8MHwxfHNlYXJjaHwzfHxjb250YWluZXIlMjBzaGlwJTIwYWVyaWFsJTIwb2NlYW4lMjBsb2dpc3RpY3N8ZW58MHx8fHwxNzczMTg2MTUyfDA&ixlib=rb-4.1.0&q=85')`
         }}
       >
-        <div className="absolute inset-0 bg-slate-900/70" />
+        <div className="absolute inset-0 bg-gradient-to-br from-[#FF4F00]/80 to-slate-900/90" />
         <div className="relative z-10 flex flex-col justify-end p-12 text-white">
           <h2 className="text-3xl font-bold mb-4">Stay Ahead of Demurrage</h2>
-          <p className="text-slate-300 text-lg">
+          <p className="text-white/80 text-lg">
             Get automatic SMS alerts at 48h, 24h, 12h, and 6h before your container's Last Free Day expires.
           </p>
         </div>

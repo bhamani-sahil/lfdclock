@@ -56,16 +56,18 @@ Build a Logistics SaaS called "LFD Clock" with:
 - [x] Active/Picked Up/All tabs filtering
 
 ### Phase 3 - Landing Page Redesign (Completed Dec 2025)
-- [x] "Next-Gen" SaaS design with dark theme (#0B0B0B)
-- [x] Safety Orange accent color (#FF4F00)
+- [x] Paper/cream background (#FAF7F2) - warm book-like feel
+- [x] Safety Orange accent color (#FF4F00) across ALL pages
 - [x] Inter font family
-- [x] Hero section with orange-to-white gradient headline
+- [x] Hero section with orange-to-dark gradient headline
 - [x] "Join the Beta" CTA with glass-morphism hover effect
-- [x] Social proof carrier strip (MAERSK, MSC, CMA CGM, etc.)
+- [x] **Infinite Marquee** carrier strip with logos (MAERSK, MSC, CMA CGM, etc.)
 - [x] Vertical "How It Works" layout with numbered steps
 - [x] Two-tier pricing cards (Starter/Enterprise) with glow effects
-- [x] Minimalist footer with contact info
+- [x] Updated contact info: info@lfdclock.com, +1 825 760 7425
 - [x] Mobile responsive design
+- [x] Orange accent applied to Login, Signup, and Dashboard pages
+- [x] Consistent paper/cream background across entire app
 
 ### Legal Pages (Completed)
 - [x] Privacy Policy page (/privacy)
