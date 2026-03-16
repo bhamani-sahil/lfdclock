@@ -9,7 +9,10 @@ import {
   Check, 
   Phone,
   ChevronRight,
-  Anchor
+  Anchor,
+  Ship,
+  Plane,
+  TrainFront
 } from 'lucide-react';
 
 export const LandingPage = () => {
@@ -127,9 +130,8 @@ export const LandingPage = () => {
             
             {/* Subheadline */}
             <p className="text-lg sm:text-xl text-[#666666] mb-10 max-w-2xl leading-relaxed">
-              LFD Clock automatically tracks your container Last Free Days and sends 
-              SMS alerts before deadlines hit. Forward your shipping emails and let 
-              our AI handle the rest.
+              AI-powered container tracking and automated SMS alerts. Built for 
+              Freight Forwarders, 3PLs, and Drayage Brokers.
             </p>
             
             {/* CTA Buttons */}
@@ -178,6 +180,28 @@ export const LandingPage = () => {
       {/* Social Proof - Carrier Infinite Marquee */}
       <section className="relative py-12 border-y border-[#E8E2D9] bg-white/50">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          {/* Freight Modes */}
+          <div className="flex justify-center gap-8 sm:gap-16 mb-8">
+            <div className="flex flex-col items-center gap-2 group">
+              <div className="w-14 h-14 rounded-xl bg-[#FF4F00]/10 border border-[#FF4F00]/20 flex items-center justify-center group-hover:bg-[#FF4F00] group-hover:border-[#FF4F00] transition-all duration-300">
+                <Ship className="w-6 h-6 text-[#FF4F00] group-hover:text-white transition-colors" />
+              </div>
+              <span className="text-xs font-medium text-[#666666] uppercase tracking-wider">Ocean</span>
+            </div>
+            <div className="flex flex-col items-center gap-2 group">
+              <div className="w-14 h-14 rounded-xl bg-[#FF4F00]/10 border border-[#FF4F00]/20 flex items-center justify-center group-hover:bg-[#FF4F00] group-hover:border-[#FF4F00] transition-all duration-300">
+                <Plane className="w-6 h-6 text-[#FF4F00] group-hover:text-white transition-colors" />
+              </div>
+              <span className="text-xs font-medium text-[#666666] uppercase tracking-wider">Air</span>
+            </div>
+            <div className="flex flex-col items-center gap-2 group">
+              <div className="w-14 h-14 rounded-xl bg-[#FF4F00]/10 border border-[#FF4F00]/20 flex items-center justify-center group-hover:bg-[#FF4F00] group-hover:border-[#FF4F00] transition-all duration-300">
+                <TrainFront className="w-6 h-6 text-[#FF4F00] group-hover:text-white transition-colors" />
+              </div>
+              <span className="text-xs font-medium text-[#666666] uppercase tracking-wider">Rail</span>
+            </div>
+          </div>
+          
           <p className="text-center text-xs uppercase tracking-widest text-[#888888] mb-8">
             Works with all major carriers
           </p>
@@ -330,10 +354,12 @@ export const LandingPage = () => {
                   Starter
                 </h3>
                 <div className="flex items-baseline gap-2">
-                  <span className="text-4xl font-bold text-[#1A1A1A]">$49</span>
-                  <span className="text-[#888888]">/month</span>
+                  <span className="text-4xl font-bold text-[#1A1A1A]">Free</span>
                 </div>
-                <p className="text-sm text-[#FF4F00] mt-2">Free during beta</p>
+                <div className="flex items-center gap-2 mt-2">
+                  <span className="text-sm text-[#888888] line-through">$49/month</span>
+                  <span className="text-xs bg-[#FF4F00]/10 text-[#FF4F00] px-2 py-0.5 rounded-full font-medium">Beta Access</span>
+                </div>
               </div>
               
               <ul className="space-y-4 mb-8">
@@ -347,10 +373,10 @@ export const LandingPage = () => {
               
               <Link to="/signup">
                 <Button 
-                  className="w-full btn-ghost-paper h-12 rounded-xl"
+                  className="w-full btn-accent-glow h-12 rounded-xl"
                   data-testid="pricing-starter-btn"
                 >
-                  Start Free Trial
+                  Get Started Free
                 </Button>
               </Link>
             </div>
@@ -359,7 +385,7 @@ export const LandingPage = () => {
             <div className="pricing-card featured rounded-2xl p-8">
               <div className="absolute -top-3 left-1/2 -translate-x-1/2">
                 <span className="px-4 py-1 bg-[#FF4F00] text-white text-xs font-semibold rounded-full uppercase tracking-wider">
-                  Popular
+                  For Teams
                 </span>
               </div>
               
@@ -368,10 +394,9 @@ export const LandingPage = () => {
                   Enterprise
                 </h3>
                 <div className="flex items-baseline gap-2">
-                  <span className="text-4xl font-bold text-[#1A1A1A]">$199</span>
-                  <span className="text-[#888888]">/month</span>
+                  <span className="text-4xl font-bold text-[#1A1A1A]">Custom</span>
                 </div>
-                <p className="text-sm text-[#FF4F00] mt-2">Contact for beta pricing</p>
+                <p className="text-sm text-[#888888] mt-2">Tailored to your volume</p>
               </div>
               
               <ul className="space-y-4 mb-8">
@@ -383,14 +408,14 @@ export const LandingPage = () => {
                 ))}
               </ul>
               
-              <Link to="/signup">
+              <a href="mailto:info@lfdclock.com?subject=Enterprise%20Inquiry">
                 <Button 
-                  className="w-full btn-accent-glow h-12 rounded-xl"
+                  className="w-full btn-ghost-paper h-12 rounded-xl border-[#FF4F00]/30 hover:border-[#FF4F00]"
                   data-testid="pricing-enterprise-btn"
                 >
-                  Contact Sales
+                  Contact Us
                 </Button>
-              </Link>
+              </a>
             </div>
           </div>
         </div>
