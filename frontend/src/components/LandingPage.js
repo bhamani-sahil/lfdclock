@@ -410,7 +410,7 @@ export const LandingPage = () => {
               
               <a href="mailto:info@lfdclock.com?subject=Enterprise%20Inquiry">
                 <Button 
-                  className="w-full btn-ghost-paper h-12 rounded-xl border-[#FF4F00]/30 hover:border-[#FF4F00]"
+                  className="w-full h-12 rounded-xl bg-transparent border border-[#E8E2D9] text-[#666666] hover:border-[#FF4F00] hover:text-[#FF4F00] hover:bg-[#FF4F00]/5 transition-all"
                   data-testid="pricing-enterprise-btn"
                 >
                   Contact Us
