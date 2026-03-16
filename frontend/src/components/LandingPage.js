@@ -1,55 +1,94 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
-import { Ship, Clock, Bell, FileText, ArrowRight, CheckCircle } from 'lucide-react';
+import { 
+  Mail, 
+  Zap, 
+  Bell, 
+  ArrowRight, 
+  Check, 
+  Phone,
+  ChevronRight,
+  Anchor
+} from 'lucide-react';
 
 export const LandingPage = () => {
-  const features = [
+  const carriers = [
+    'MAERSK', 'MSC', 'CMA CGM', 'COSCO', 'HAPAG-LLOYD', 
+    'ONE', 'EVERGREEN', 'YANG MING', 'HMM', 'ZIM'
+  ];
+
+  const steps = [
     {
-      icon: FileText,
-      title: 'Smart Email Parsing',
-      description: 'Forward your freight notifications and we\'ll automatically extract container data using AI.'
+      number: '01',
+      title: 'Forward Your Emails',
+      description: 'Send your shipping notifications to your unique @inbound.lfdclock.com address. Works with any carrier or freight forwarder.'
     },
     {
-      icon: Clock,
-      title: 'Real-Time Tracking',
-      description: 'Visual traffic light system shows exactly how much time you have before LFD expires.'
+      number: '02',
+      title: 'AI Extracts the Data',
+      description: 'Our AI instantly parses container numbers, Last Free Days, and carrier details from PDFs and email content.'
     },
     {
-      icon: Bell,
-      title: 'Automated Alerts',
-      description: 'SMS notifications at 48h, 24h, 12h, and 6h intervals. Customize what you receive.'
+      number: '03',
+      title: 'Get SMS Alerts',
+      description: 'Receive automatic SMS notifications at 48h, 24h, 12h, and 6h before each deadline. Never miss a pickup.'
     }
   ];
 
-  const benefits = [
-    'Avoid costly demurrage charges',
-    'Never miss a pickup deadline',
-    'Centralized shipment visibility',
-    'AI-powered document parsing'
+  const starterFeatures = [
+    'Up to 25 containers/month',
+    'SMS alerts (48h, 24h, 12h, 6h)',
+    'AI email parsing',
+    'Traffic light dashboard',
+    'Single user'
+  ];
+
+  const enterpriseFeatures = [
+    'Unlimited containers',
+    'Custom alert schedules',
+    'Priority AI parsing',
+    'Multi-user access',
+    'API access',
+    'Dedicated support',
+    'Custom integrations'
   ];
 
   return (
-    <div className="min-h-screen bg-slate-50">
+    <div className="landing-dark min-h-screen bg-[#0B0B0B] text-white overflow-hidden">
+      {/* Background Effects */}
+      <div className="fixed inset-0 bg-grid-pattern pointer-events-none" />
+      <div className="radial-glow -top-64 -right-64" />
+      <div className="radial-glow top-1/2 -left-64" />
+      
       {/* Navigation */}
-      <nav className="bg-white border-b border-slate-200">
+      <nav className="relative z-50 border-b border-[#1A1A1A]">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between items-center h-16">
-            <div className="flex items-center gap-2">
-              <div className="w-9 h-9 bg-primary rounded-sm flex items-center justify-center">
-                <Ship className="w-5 h-5 text-white" />
-              </div>
-              <span className="font-bold text-xl tracking-tight">LFD Clock</span>
-            </div>
+          <div className="flex justify-between items-center h-20">
             <div className="flex items-center gap-3">
+              <div className="w-10 h-10 bg-[#FF4F00] rounded-lg flex items-center justify-center">
+                <Anchor className="w-5 h-5 text-white" />
+              </div>
+              <span className="font-bold text-xl tracking-tight" style={{ fontFamily: 'Inter, sans-serif' }}>
+                LFD Clock
+              </span>
+            </div>
+            <div className="flex items-center gap-4">
               <Link to="/login">
-                <Button variant="ghost" data-testid="nav-login-btn">
+                <Button 
+                  variant="ghost" 
+                  className="btn-ghost-dark h-10 px-5"
+                  data-testid="nav-login-btn"
+                >
                   Sign In
                 </Button>
               </Link>
               <Link to="/signup">
-                <Button className="btn-industrial" data-testid="nav-signup-btn">
-                  Get Started
+                <Button 
+                  className="btn-accent-glow h-10 px-6 rounded-lg"
+                  data-testid="nav-signup-btn"
+                >
+                  Join the Beta
                 </Button>
               </Link>
             </div>
@@ -58,37 +97,41 @@ export const LandingPage = () => {
       </nav>
 
       {/* Hero Section */}
-      <section className="relative py-20 lg:py-32 overflow-hidden">
-        <div 
-          className="absolute inset-0 bg-cover bg-center opacity-10"
-          style={{
-            backgroundImage: `url('https://images.unsplash.com/photo-1769144256207-bc4bb75b29db?crop=entropy&cs=srgb&fm=jpg&ixid=M3w4NjA2MjJ8MHwxfHNlYXJjaHwzfHxjb250YWluZXIlMjBzaGlwJTIwYWVyaWFsJTIwb2NlYW4lMjBsb2dpc3RpY3N8ZW58MHx8fHwxNzczMTg2MTUyfDA&ixlib=rb-4.1.0&q=85')`
-          }}
-        />
-        <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="max-w-3xl">
-            <div className="inline-flex items-center gap-2 px-3 py-1 bg-amber-100 text-amber-800 rounded-sm text-sm font-medium mb-6">
-              <Clock className="w-4 h-4" />
-              Never miss a Last Free Day again
+      <section className="relative pt-24 pb-20 lg:pt-32 lg:pb-28">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="max-w-4xl">
+            {/* Beta Badge */}
+            <div className="inline-flex items-center gap-2 px-4 py-2 bg-[#FF4F00]/10 border border-[#FF4F00]/30 rounded-full text-sm font-medium text-[#FF4F00] mb-8">
+              <span className="w-2 h-2 bg-[#FF4F00] rounded-full animate-pulse" />
+              Now in Beta — Limited Spots Available
             </div>
-            <h1 className="text-4xl sm:text-5xl lg:text-6xl font-black tracking-tight text-slate-900 mb-6">
-              STOP PAYING
+            
+            {/* Main Headline */}
+            <h1 
+              className="text-5xl sm:text-6xl lg:text-7xl font-black tracking-tight mb-6"
+              style={{ fontFamily: 'Inter, sans-serif', lineHeight: 1.1 }}
+            >
+              <span className="text-gradient-hero">Stop Paying</span>
               <br />
-              <span className="text-amber-500">DEMURRAGE</span>
+              <span className="text-white">Demurrage Fees.</span>
             </h1>
-            <p className="text-lg sm:text-xl text-slate-600 mb-8 max-w-2xl">
+            
+            {/* Subheadline */}
+            <p className="text-lg sm:text-xl text-[#888888] mb-10 max-w-2xl leading-relaxed">
               LFD Clock automatically tracks your container Last Free Days and sends 
               SMS alerts before deadlines hit. Forward your shipping emails and let 
               our AI handle the rest.
             </p>
-            <div className="flex flex-col sm:flex-row gap-4">
+            
+            {/* CTA Buttons */}
+            <div className="flex flex-col sm:flex-row gap-4 mb-16">
               <Link to="/signup">
                 <Button 
                   size="lg" 
-                  className="h-12 px-8 btn-industrial text-base"
+                  className="btn-accent-glow h-14 px-8 text-base rounded-xl"
                   data-testid="hero-cta-btn"
                 >
-                  Start Free Trial
+                  Join the Beta
                   <ArrowRight className="w-5 h-5 ml-2" />
                 </Button>
               </Link>
@@ -96,9 +139,222 @@ export const LandingPage = () => {
                 <Button 
                   variant="outline" 
                   size="lg" 
-                  className="h-12 px-8 border-2 text-base"
+                  className="btn-ghost-dark h-14 px-8 text-base rounded-xl"
                 >
                   Sign In
+                  <ChevronRight className="w-5 h-5 ml-1" />
+                </Button>
+              </Link>
+            </div>
+
+            {/* Stats Row */}
+            <div className="flex flex-wrap gap-8 sm:gap-12">
+              <div>
+                <div className="text-3xl sm:text-4xl font-bold text-white">$300+</div>
+                <div className="text-sm text-[#666666]">Avg. saved per container</div>
+              </div>
+              <div>
+                <div className="text-3xl sm:text-4xl font-bold text-white">4</div>
+                <div className="text-sm text-[#666666]">SMS alerts before LFD</div>
+              </div>
+              <div>
+                <div className="text-3xl sm:text-4xl font-bold text-white">&lt;30s</div>
+                <div className="text-sm text-[#666666]">AI parsing time</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* Social Proof - Carrier Strip */}
+      <section className="relative py-12 border-y border-[#1A1A1A] bg-[#0A0A0A]">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <p className="text-center text-xs uppercase tracking-widest text-[#555555] mb-8">
+            Works with all major carriers
+          </p>
+          <div className="overflow-hidden">
+            <div className="flex gap-12 items-center justify-center flex-wrap">
+              {carriers.map((carrier, index) => (
+                <span 
+                  key={index} 
+                  className="text-[#444444] font-semibold text-sm tracking-wider whitespace-nowrap hover:text-[#FF4F00] transition-colors cursor-default"
+                  style={{ fontFamily: 'Inter, sans-serif' }}
+                >
+                  {carrier}
+                </span>
+              ))}
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* How It Works - Vertical Steps */}
+      <section className="relative py-24 lg:py-32">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="text-center mb-16">
+            <h2 
+              className="text-3xl sm:text-4xl font-bold tracking-tight text-white mb-4"
+              style={{ fontFamily: 'Inter, sans-serif' }}
+            >
+              How It Works
+            </h2>
+            <p className="text-[#888888] text-lg max-w-xl mx-auto">
+              Three simple steps to never miss a Last Free Day again
+            </p>
+          </div>
+          
+          <div className="max-w-3xl mx-auto space-y-8">
+            {steps.map((step, index) => (
+              <div 
+                key={index}
+                className="glass-card rounded-2xl p-8 relative"
+              >
+                <div className="flex items-start gap-6">
+                  <div className="flex-shrink-0 w-14 h-14 rounded-xl bg-[#FF4F00]/10 border border-[#FF4F00]/30 flex items-center justify-center">
+                    <span className="text-[#FF4F00] font-bold text-lg" style={{ fontFamily: 'Inter, sans-serif' }}>
+                      {step.number}
+                    </span>
+                  </div>
+                  <div>
+                    <h3 className="text-xl font-semibold text-white mb-2" style={{ fontFamily: 'Inter, sans-serif' }}>
+                      {step.title}
+                    </h3>
+                    <p className="text-[#888888] leading-relaxed">
+                      {step.description}
+                    </p>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* Features Section */}
+      <section className="relative py-24 border-y border-[#1A1A1A]">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="grid lg:grid-cols-3 gap-8">
+            <div className="glass-card rounded-2xl p-8">
+              <div className="feature-icon w-14 h-14 bg-[#1A1A1A] rounded-xl flex items-center justify-center mb-6">
+                <Mail className="w-6 h-6 text-[#FF4F00]" />
+              </div>
+              <h3 className="text-xl font-semibold text-white mb-3" style={{ fontFamily: 'Inter, sans-serif' }}>
+                Smart Email Parsing
+              </h3>
+              <p className="text-[#888888] leading-relaxed">
+                Forward your freight notifications and our AI automatically extracts container data from PDFs and emails.
+              </p>
+            </div>
+            
+            <div className="glass-card rounded-2xl p-8">
+              <div className="feature-icon w-14 h-14 bg-[#1A1A1A] rounded-xl flex items-center justify-center mb-6">
+                <Zap className="w-6 h-6 text-[#FF4F00]" />
+              </div>
+              <h3 className="text-xl font-semibold text-white mb-3" style={{ fontFamily: 'Inter, sans-serif' }}>
+                Real-Time Tracking
+              </h3>
+              <p className="text-[#888888] leading-relaxed">
+                Visual traffic light system shows exactly how much time you have before each LFD expires.
+              </p>
+            </div>
+            
+            <div className="glass-card rounded-2xl p-8">
+              <div className="feature-icon w-14 h-14 bg-[#1A1A1A] rounded-xl flex items-center justify-center mb-6">
+                <Bell className="w-6 h-6 text-[#FF4F00]" />
+              </div>
+              <h3 className="text-xl font-semibold text-white mb-3" style={{ fontFamily: 'Inter, sans-serif' }}>
+                Automated SMS Alerts
+              </h3>
+              <p className="text-[#888888] leading-relaxed">
+                Get SMS notifications at 48h, 24h, 12h, and 6h intervals. Never miss a deadline again.
+              </p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* Pricing Section */}
+      <section className="relative py-24 lg:py-32">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="text-center mb-16">
+            <h2 
+              className="text-3xl sm:text-4xl font-bold tracking-tight text-white mb-4"
+              style={{ fontFamily: 'Inter, sans-serif' }}
+            >
+              Simple Pricing
+            </h2>
+            <p className="text-[#888888] text-lg max-w-xl mx-auto">
+              Start free during beta. Scale as your volume grows.
+            </p>
+          </div>
+          
+          <div className="grid md:grid-cols-2 gap-8 max-w-4xl mx-auto">
+            {/* Starter Plan */}
+            <div className="pricing-card rounded-2xl p-8">
+              <div className="mb-6">
+                <h3 className="text-lg font-semibold text-[#888888] mb-2" style={{ fontFamily: 'Inter, sans-serif' }}>
+                  Starter
+                </h3>
+                <div className="flex items-baseline gap-2">
+                  <span className="text-4xl font-bold text-white">$49</span>
+                  <span className="text-[#666666]">/month</span>
+                </div>
+                <p className="text-sm text-[#FF4F00] mt-2">Free during beta</p>
+              </div>
+              
+              <ul className="space-y-4 mb-8">
+                {starterFeatures.map((feature, index) => (
+                  <li key={index} className="flex items-center gap-3 text-[#CCCCCC]">
+                    <Check className="w-5 h-5 text-[#FF4F00] flex-shrink-0" />
+                    <span>{feature}</span>
+                  </li>
+                ))}
+              </ul>
+              
+              <Link to="/signup">
+                <Button 
+                  className="w-full btn-ghost-dark h-12 rounded-xl text-white border-[#333333] hover:border-[#FF4F00]"
+                  data-testid="pricing-starter-btn"
+                >
+                  Start Free Trial
+                </Button>
+              </Link>
+            </div>
+            
+            {/* Enterprise Plan */}
+            <div className="pricing-card featured rounded-2xl p-8">
+              <div className="absolute -top-3 left-1/2 -translate-x-1/2">
+                <span className="px-4 py-1 bg-[#FF4F00] text-white text-xs font-semibold rounded-full uppercase tracking-wider">
+                  Popular
+                </span>
+              </div>
+              
+              <div className="mb-6">
+                <h3 className="text-lg font-semibold text-[#888888] mb-2" style={{ fontFamily: 'Inter, sans-serif' }}>
+                  Enterprise
+                </h3>
+                <div className="flex items-baseline gap-2">
+                  <span className="text-4xl font-bold text-white">$199</span>
+                  <span className="text-[#666666]">/month</span>
+                </div>
+                <p className="text-sm text-[#FF4F00] mt-2">Contact for beta pricing</p>
+              </div>
+              
+              <ul className="space-y-4 mb-8">
+                {enterpriseFeatures.map((feature, index) => (
+                  <li key={index} className="flex items-center gap-3 text-[#CCCCCC]">
+                    <Check className="w-5 h-5 text-[#FF4F00] flex-shrink-0" />
+                    <span>{feature}</span>
+                  </li>
+                ))}
+              </ul>
+              
+              <Link to="/signup">
+                <Button 
+                  className="w-full btn-accent-glow h-12 rounded-xl"
+                  data-testid="pricing-enterprise-btn"
+                >
+                  Contact Sales
                 </Button>
               </Link>
             </div>
@@ -106,119 +362,25 @@ export const LandingPage = () => {
         </div>
       </section>
 
-      {/* Features Section */}
-      <section className="py-20 bg-white border-y border-slate-200">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center mb-16">
-            <h2 className="text-3xl font-bold tracking-tight text-slate-900 mb-4">
-              How It Works
-            </h2>
-            <p className="text-lg text-slate-600 max-w-2xl mx-auto">
-              Three simple steps to automated LFD tracking
-            </p>
-          </div>
-          <div className="grid md:grid-cols-3 gap-8">
-            {features.map((feature, index) => (
-              <div 
-                key={index}
-                className="bg-slate-50 border border-slate-200 rounded-sm p-6 hover:border-slate-300 transition-colors"
-              >
-                <div className="w-12 h-12 bg-primary rounded-sm flex items-center justify-center mb-4">
-                  <feature.icon className="w-6 h-6 text-white" />
-                </div>
-                <h3 className="text-xl font-bold mb-2">{feature.title}</h3>
-                <p className="text-slate-600">{feature.description}</p>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* Traffic Light Demo Section */}
-      <section className="py-20 bg-slate-900 text-white">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="grid lg:grid-cols-2 gap-12 items-center">
-            <div>
-              <h2 className="text-3xl font-bold tracking-tight mb-6">
-                Visual Status at a Glance
-              </h2>
-              <p className="text-lg text-slate-300 mb-8">
-                Our traffic light system gives you instant visibility into which 
-                containers need immediate attention. No more spreadsheets, no more 
-                missed deadlines.
-              </p>
-              <div className="space-y-4">
-                {benefits.map((benefit, index) => (
-                  <div key={index} className="flex items-center gap-3">
-                    <CheckCircle className="w-5 h-5 text-emerald-400 shrink-0" />
-                    <span>{benefit}</span>
-                  </div>
-                ))}
-              </div>
-            </div>
-            <div className="bg-slate-800 rounded-sm p-6 border border-slate-700">
-              <div className="space-y-4">
-                <div className="flex items-center justify-between p-4 bg-slate-900 rounded-sm border-l-4 border-emerald-500">
-                  <div>
-                    <code className="text-sm text-slate-400">MSCU1234567</code>
-                    <p className="text-white font-medium">MSC Aurora</p>
-                  </div>
-                  <div className="text-right">
-                    <div className="flex items-center gap-2">
-                      <span className="w-3 h-3 bg-emerald-500 rounded-full" style={{ boxShadow: '0 0 8px #10B981' }} />
-                      <span className="text-emerald-400 font-mono">72h</span>
-                    </div>
-                    <span className="text-xs text-slate-500">Safe</span>
-                  </div>
-                </div>
-                <div className="flex items-center justify-between p-4 bg-slate-900 rounded-sm border-l-4 border-amber-500">
-                  <div>
-                    <code className="text-sm text-slate-400">CMAU7654321</code>
-                    <p className="text-white font-medium">CMA CGM Marco</p>
-                  </div>
-                  <div className="text-right">
-                    <div className="flex items-center gap-2">
-                      <span className="w-3 h-3 bg-amber-500 rounded-full" style={{ boxShadow: '0 0 8px #F59E0B' }} />
-                      <span className="text-amber-400 font-mono">36h</span>
-                    </div>
-                    <span className="text-xs text-slate-500">Warning</span>
-                  </div>
-                </div>
-                <div className="flex items-center justify-between p-4 bg-slate-900 rounded-sm border-l-4 border-red-500">
-                  <div>
-                    <code className="text-sm text-slate-400">MAEU9876543</code>
-                    <p className="text-white font-medium">Maersk Edmonton</p>
-                  </div>
-                  <div className="text-right">
-                    <div className="flex items-center gap-2">
-                      <span className="w-3 h-3 bg-red-500 rounded-full traffic-light-pulse" style={{ boxShadow: '0 0 8px #EF4444' }} />
-                      <span className="text-red-400 font-mono">6h</span>
-                    </div>
-                    <span className="text-xs text-slate-500">Critical</span>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* CTA Section */}
-      <section className="py-20 bg-amber-500">
+      {/* Final CTA Section */}
+      <section className="relative py-24 border-t border-[#1A1A1A]">
         <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
-          <h2 className="text-3xl font-bold tracking-tight text-white mb-4">
+          <h2 
+            className="text-3xl sm:text-4xl font-bold tracking-tight text-white mb-6"
+            style={{ fontFamily: 'Inter, sans-serif' }}
+          >
             Ready to Stop Paying Demurrage?
           </h2>
-          <p className="text-lg text-amber-100 mb-8">
+          <p className="text-[#888888] text-lg mb-10 max-w-xl mx-auto">
             Join freight forwarders who are saving thousands with automated LFD tracking.
           </p>
           <Link to="/signup">
             <Button 
-              size="lg" 
-              className="h-12 px-8 bg-slate-900 hover:bg-slate-800 text-white btn-industrial text-base"
+              size="lg"
+              className="btn-accent-glow h-14 px-10 text-base rounded-xl"
               data-testid="footer-cta-btn"
             >
-              Get Started Free
+              Join the Beta — It's Free
               <ArrowRight className="w-5 h-5 ml-2" />
             </Button>
           </Link>
@@ -226,28 +388,51 @@ export const LandingPage = () => {
       </section>
 
       {/* Footer */}
-      <footer className="bg-slate-900 text-slate-400 py-12">
+      <footer className="relative border-t border-[#1A1A1A] py-12">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex flex-col md:flex-row justify-between items-center gap-6">
-            <div className="flex items-center gap-2">
-              <div className="w-8 h-8 bg-slate-800 rounded-sm flex items-center justify-center">
-                <Ship className="w-4 h-4 text-slate-400" />
+          <div className="flex flex-col lg:flex-row justify-between items-center gap-8">
+            {/* Logo */}
+            <div className="flex items-center gap-3">
+              <div className="w-9 h-9 bg-[#1A1A1A] rounded-lg flex items-center justify-center">
+                <Anchor className="w-4 h-4 text-[#FF4F00]" />
               </div>
-              <span className="font-bold text-white">LFD Clock</span>
+              <span className="font-semibold text-white" style={{ fontFamily: 'Inter, sans-serif' }}>
+                LFD Clock
+              </span>
             </div>
-            <div className="flex items-center gap-6 text-sm">
-              <Link to="/privacy" className="hover:text-white transition-colors">
-                Privacy Policy
-              </Link>
-              <Link to="/terms" className="hover:text-white transition-colors">
-                Terms of Service
-              </Link>
-              <a href="mailto:support@lfdclock.com" className="hover:text-white transition-colors">
-                Contact
+            
+            {/* Contact Info */}
+            <div className="flex flex-col sm:flex-row items-center gap-6 text-sm text-[#666666]">
+              <a 
+                href="mailto:hello@lfdclock.com" 
+                className="footer-link flex items-center gap-2 hover:text-white transition-colors"
+              >
+                <Mail className="w-4 h-4" />
+                hello@lfdclock.com
+              </a>
+              <a 
+                href="tel:+18005551234" 
+                className="footer-link flex items-center gap-2 hover:text-white transition-colors"
+              >
+                <Phone className="w-4 h-4" />
+                1-800-555-1234
               </a>
             </div>
-            <p className="text-sm">
-              © 2026 LFD Clock. Built for freight forwarders.
+            
+            {/* Links */}
+            <div className="flex items-center gap-6 text-sm">
+              <Link to="/privacy" className="footer-link text-[#666666]">
+                Privacy
+              </Link>
+              <Link to="/terms" className="footer-link text-[#666666]">
+                Terms
+              </Link>
+            </div>
+          </div>
+          
+          <div className="mt-8 pt-8 border-t border-[#1A1A1A] text-center">
+            <p className="text-xs text-[#444444]">
+              © 2026 LFD Clock. Built for freight forwarders who value their time.
             </p>
           </div>
         </div>

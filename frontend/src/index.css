@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=Chivo:wght@400;500;700;900&family=Public+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Chivo:wght@400;500;700;900&family=Public+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&family=Inter:wght@300;400;500;600;700;800;900&display=swap');
 
 @tailwind base;
 @tailwind components;
@@ -114,4 +114,214 @@
   [data-debug-wrapper="true"] {
     display: contents !important;
   }
+}
+
+/* ========================================
+   NEXT-GEN LANDING PAGE STYLES
+   ======================================== */
+
+/* Landing page dark theme variables */
+.landing-dark {
+  --landing-bg: #0B0B0B;
+  --landing-surface: #111111;
+  --landing-surface-hover: #1A1A1A;
+  --landing-border: #222222;
+  --landing-accent: #FF4F00;
+  --landing-accent-glow: rgba(255, 79, 0, 0.4);
+  --landing-text: #FFFFFF;
+  --landing-text-muted: #888888;
+  --landing-text-dim: #666666;
+}
+
+/* Glass morphism card */
+.glass-card {
+  background: rgba(255, 255, 255, 0.03);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  transition: all 0.3s ease;
+}
+
+.glass-card:hover {
+  background: rgba(255, 255, 255, 0.06);
+  border-color: rgba(255, 255, 255, 0.12);
+  transform: translateY(-4px);
+}
+
+/* Accent glow button */
+.btn-accent-glow {
+  background: linear-gradient(135deg, #FF4F00, #FF6B2C);
+  color: white;
+  font-weight: 600;
+  letter-spacing: 0.025em;
+  transition: all 0.3s ease;
+  position: relative;
+  overflow: hidden;
+}
+
+.btn-accent-glow::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(135deg, rgba(255,255,255,0.2), transparent);
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+
+.btn-accent-glow:hover {
+  box-shadow: 0 0 30px rgba(255, 79, 0, 0.5), 0 0 60px rgba(255, 79, 0, 0.3);
+  transform: translateY(-2px);
+}
+
+.btn-accent-glow:hover::before {
+  opacity: 1;
+}
+
+/* Ghost button for dark theme */
+.btn-ghost-dark {
+  background: transparent;
+  color: #888888;
+  border: 1px solid #333333;
+  transition: all 0.3s ease;
+}
+
+.btn-ghost-dark:hover {
+  color: #FFFFFF;
+  border-color: #FF4F00;
+  background: rgba(255, 79, 0, 0.1);
+}
+
+/* Hero gradient text */
+.text-gradient-hero {
+  background: linear-gradient(135deg, #FF4F00 0%, #FF6B2C 30%, #FFFFFF 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+/* Pricing card glow */
+.pricing-card {
+  background: rgba(17, 17, 17, 0.8);
+  border: 1px solid #222222;
+  transition: all 0.4s ease;
+  position: relative;
+}
+
+.pricing-card::before {
+  content: '';
+  position: absolute;
+  inset: -1px;
+  border-radius: inherit;
+  background: linear-gradient(135deg, transparent, rgba(255, 79, 0, 0.3), transparent);
+  opacity: 0;
+  transition: opacity 0.4s ease;
+  z-index: -1;
+}
+
+.pricing-card:hover {
+  border-color: rgba(255, 79, 0, 0.5);
+  transform: translateY(-8px);
+}
+
+.pricing-card:hover::before {
+  opacity: 1;
+}
+
+.pricing-card.featured {
+  border-color: #FF4F00;
+  box-shadow: 0 0 40px rgba(255, 79, 0, 0.2);
+}
+
+.pricing-card.featured::before {
+  opacity: 1;
+}
+
+/* Step card with number */
+.step-card {
+  position: relative;
+  padding-left: 80px;
+}
+
+.step-number {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 56px;
+  height: 56px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: #FF4F00;
+  border: 2px solid #FF4F00;
+  border-radius: 12px;
+  background: rgba(255, 79, 0, 0.1);
+}
+
+/* Subtle grid background */
+.bg-grid-pattern {
+  background-image: 
+    linear-gradient(rgba(255, 255, 255, 0.02) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255, 255, 255, 0.02) 1px, transparent 1px);
+  background-size: 60px 60px;
+}
+
+/* Radial glow effect */
+.radial-glow {
+  position: absolute;
+  width: 600px;
+  height: 600px;
+  background: radial-gradient(circle, rgba(255, 79, 0, 0.15) 0%, transparent 70%);
+  pointer-events: none;
+  filter: blur(40px);
+}
+
+/* Carrier logo strip animation */
+@keyframes scroll-logos {
+  0% {
+    transform: translateX(0);
+  }
+  100% {
+    transform: translateX(-50%);
+  }
+}
+
+.logo-scroll {
+  animation: scroll-logos 30s linear infinite;
+}
+
+/* Feature icon hover */
+.feature-icon {
+  transition: all 0.3s ease;
+}
+
+.glass-card:hover .feature-icon {
+  background: #FF4F00;
+  box-shadow: 0 0 20px rgba(255, 79, 0, 0.5);
+}
+
+/* Footer link hover */
+.footer-link {
+  position: relative;
+  transition: color 0.3s ease;
+}
+
+.footer-link::after {
+  content: '';
+  position: absolute;
+  bottom: -2px;
+  left: 0;
+  width: 0;
+  height: 1px;
+  background: #FF4F00;
+  transition: width 0.3s ease;
+}
+
+.footer-link:hover {
+  color: #FFFFFF;
+}
+
+.footer-link:hover::after {
+  width: 100%;
 }
