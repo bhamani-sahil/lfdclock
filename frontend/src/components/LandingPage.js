@@ -410,7 +410,7 @@ export const LandingPage = () => {
               
               <a href="mailto:info@lfdclock.com?subject=Enterprise%20Inquiry">
                 <Button 
-                  className="w-full h-12 rounded-xl bg-transparent border border-[#E8E2D9] text-[#666666] hover:border-[#FF4F00] hover:text-[#FF4F00] hover:bg-[#FF4F00]/5 transition-all"
+                  className="w-full h-12 rounded-xl bg-[#FF4F00] text-white hover:bg-[#e04500] transition-all"
                   data-testid="pricing-enterprise-btn"
                 >
                   Contact Us
@@ -468,13 +468,6 @@ export const LandingPage = () => {
               >
                 <Mail className="w-4 h-4" />
                 info@lfdclock.com
-              </a>
-              <a 
-                href="tel:+18257607425" 
-                className="footer-link flex items-center gap-2 hover:text-[#1A1A1A] transition-colors"
-              >
-                <Phone className="w-4 h-4" />
-                +1 825 760 7425
               </a>
             </div>
             
