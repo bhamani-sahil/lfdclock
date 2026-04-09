@@ -261,13 +261,13 @@ SHIPMENT_PARSE_PROMPT = """You are a logistics document parser. Extract shipment
 If a field cannot be found, use null. Return ONLY the JSON, no explanation."""
 
 def _call_gemini_text(prompt: str) -> str:
-    model = genai.GenerativeModel('gemini-2.0-flash')
+    model = genai.GenerativeModel('gemini-2.5-flash-lite')
     response = model.generate_content(prompt)
     return response.text
 
 def _call_gemini_pdf(pdf_path: str, prompt: str) -> str:
     uploaded = genai.upload_file(pdf_path, mime_type='application/pdf')
-    model = genai.GenerativeModel('gemini-2.0-flash')
+    model = genai.GenerativeModel('gemini-2.5-flash-lite')
     response = model.generate_content([uploaded, prompt])
     return response.text
 
