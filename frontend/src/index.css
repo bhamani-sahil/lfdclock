@@ -1,0 +1,375 @@
+@import url('https://fonts.googleapis.com/css2?family=Chivo:wght@400;500;700;900&family=Public+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&family=Inter:wght@300;400;500;600;700;800;900&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --background: 210 40% 98%;
+    --foreground: 222 47% 11%;
+    --card: 0 0% 100%;
+    --card-foreground: 222 47% 11%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 222 47% 11%;
+    --primary: 222 47% 11%;
+    --primary-foreground: 210 40% 98%;
+    --secondary: 214 32% 91%;
+    --secondary-foreground: 222 47% 11%;
+    --muted: 210 40% 96%;
+    --muted-foreground: 215 16% 47%;
+    --accent: 24 95% 53%;
+    --accent-foreground: 0 0% 100%;
+    --destructive: 0 84% 60%;
+    --destructive-foreground: 0 0% 100%;
+    --border: 214 32% 91%;
+    --input: 214 32% 91%;
+    --ring: 222 47% 11%;
+    --radius: 0.25rem;
+
+    /* Status colors */
+    --status-safe-bg: 152 81% 96%;
+    --status-safe-text: 160 84% 39%;
+    --status-safe-border: 160 84% 39%;
+    --status-warning-bg: 48 96% 89%;
+    --status-warning-text: 32 95% 44%;
+    --status-warning-border: 38 92% 50%;
+    --status-critical-bg: 0 86% 97%;
+    --status-critical-text: 0 72% 51%;
+    --status-critical-border: 0 84% 60%;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+  body {
+    @apply bg-background text-foreground;
+    font-family: 'Public Sans', sans-serif;
+  }
+  h1, h2, h3, h4, h5, h6 {
+    font-family: 'Chivo', sans-serif;
+  }
+  code, .font-mono {
+    font-family: 'JetBrains Mono', monospace;
+  }
+}
+
+/* Traffic Light Animations */
+@keyframes pulse-glow {
+  0%, 100% {
+    box-shadow: 0 0 8px currentColor, 0 0 16px currentColor;
+  }
+  50% {
+    box-shadow: 0 0 12px currentColor, 0 0 24px currentColor;
+  }
+}
+
+.traffic-light-pulse {
+  animation: pulse-glow 2s ease-in-out infinite;
+}
+
+/* Industrial Button Style */
+.btn-industrial {
+  @apply font-medium uppercase tracking-wide transition-all;
+  box-shadow: 2px 2px 0px 0px rgba(15, 23, 42, 1);
+}
+
+.btn-industrial:active {
+  transform: translateY(1px);
+  box-shadow: none;
+}
+
+/* Grain texture overlay */
+.grain-overlay::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E");
+  opacity: 0.03;
+  pointer-events: none;
+}
+
+/* Countdown timer styles */
+.countdown-number {
+  @apply font-mono text-2xl font-bold tabular-nums;
+}
+
+/* Status badges */
+.status-safe {
+  @apply bg-[hsl(var(--status-safe-bg))] text-[hsl(var(--status-safe-text))] border-[hsl(var(--status-safe-border))];
+}
+
+.status-warning {
+  @apply bg-[hsl(var(--status-warning-bg))] text-[hsl(var(--status-warning-text))] border-[hsl(var(--status-warning-border))];
+}
+
+.status-critical {
+  @apply bg-[hsl(var(--status-critical-bg))] text-[hsl(var(--status-critical-text))] border-[hsl(var(--status-critical-border))];
+}
+
+/* Data wrapper fix */
+@layer base {
+  [data-debug-wrapper="true"] {
+    display: contents !important;
+  }
+}
+
+/* ========================================
+   NEXT-GEN LANDING PAGE STYLES
+   ======================================== */
+
+/* Landing page paper/cream theme variables */
+.landing-paper {
+  --landing-bg: #FAF7F2;
+  --landing-surface: #FFFFFF;
+  --landing-surface-hover: #F5F1E8;
+  --landing-border: #E8E2D9;
+  --landing-accent: #FF4F00;
+  --landing-accent-glow: rgba(255, 79, 0, 0.3);
+  --landing-text: #1A1A1A;
+  --landing-text-muted: #666666;
+  --landing-text-dim: #888888;
+}
+
+/* Orange accent for app-wide use */
+:root {
+  --accent-orange: #FF4F00;
+  --accent-orange-hover: #E64500;
+  --accent-orange-light: rgba(255, 79, 0, 0.1);
+}
+
+/* Glass morphism card - paper theme */
+.glass-card {
+  background: rgba(255, 255, 255, 0.8);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid rgba(0, 0, 0, 0.06);
+  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.04);
+  transition: all 0.3s ease;
+}
+
+.glass-card:hover {
+  background: rgba(255, 255, 255, 0.95);
+  border-color: rgba(255, 79, 0, 0.2);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.08);
+  transform: translateY(-4px);
+}
+
+/* Accent glow button */
+.btn-accent-glow {
+  background: linear-gradient(135deg, #FF4F00, #FF6B2C);
+  color: white;
+  font-weight: 600;
+  letter-spacing: 0.025em;
+  transition: all 0.3s ease;
+  position: relative;
+  overflow: hidden;
+}
+
+.btn-accent-glow::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(135deg, rgba(255,255,255,0.2), transparent);
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+
+.btn-accent-glow:hover {
+  box-shadow: 0 0 30px rgba(255, 79, 0, 0.5), 0 0 60px rgba(255, 79, 0, 0.3);
+  transform: translateY(-2px);
+}
+
+.btn-accent-glow:hover::before {
+  opacity: 1;
+}
+
+/* Ghost button for paper theme */
+.btn-ghost-paper {
+  background: transparent;
+  color: #666666;
+  border: 1px solid #E8E2D9;
+  transition: all 0.3s ease;
+}
+
+.btn-ghost-paper:hover {
+  color: #1A1A1A;
+  border-color: #FF4F00;
+  background: rgba(255, 79, 0, 0.05);
+}
+
+/* Hero gradient text - paper theme */
+.text-gradient-hero {
+  background: linear-gradient(135deg, #FF4F00 0%, #FF6B2C 50%, #1A1A1A 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+/* Pricing card - paper theme */
+.pricing-card {
+  background: #FFFFFF;
+  border: 1px solid #E8E2D9;
+  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.04);
+  transition: all 0.4s ease;
+  position: relative;
+}
+
+.pricing-card::before {
+  content: '';
+  position: absolute;
+  inset: -1px;
+  border-radius: inherit;
+  background: linear-gradient(135deg, transparent, rgba(255, 79, 0, 0.15), transparent);
+  opacity: 0;
+  transition: opacity 0.4s ease;
+  z-index: -1;
+}
+
+.pricing-card:hover {
+  border-color: rgba(255, 79, 0, 0.4);
+  box-shadow: 0 12px 40px rgba(255, 79, 0, 0.1);
+  transform: translateY(-8px);
+}
+
+.pricing-card:hover::before {
+  opacity: 1;
+}
+
+.pricing-card.featured {
+  border-color: #FF4F00;
+  box-shadow: 0 8px 32px rgba(255, 79, 0, 0.15);
+}
+
+.pricing-card.featured::before {
+  opacity: 1;
+}
+
+/* Step card with number */
+.step-card {
+  position: relative;
+  padding-left: 80px;
+}
+
+.step-number {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 56px;
+  height: 56px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: #FF4F00;
+  border: 2px solid #FF4F00;
+  border-radius: 12px;
+  background: rgba(255, 79, 0, 0.1);
+}
+
+/* Subtle grid background - paper theme */
+.bg-grid-pattern {
+  background-image: 
+    linear-gradient(rgba(0, 0, 0, 0.02) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(0, 0, 0, 0.02) 1px, transparent 1px);
+  background-size: 60px 60px;
+}
+
+/* Radial glow effect - paper theme */
+.radial-glow {
+  position: absolute;
+  width: 600px;
+  height: 600px;
+  background: radial-gradient(circle, rgba(255, 79, 0, 0.08) 0%, transparent 70%);
+  pointer-events: none;
+  filter: blur(60px);
+}
+
+/* Carrier logo strip animation */
+@keyframes scroll-logos {
+  0% {
+    transform: translateX(0);
+  }
+  100% {
+    transform: translateX(-50%);
+  }
+}
+
+.logo-scroll {
+  animation: scroll-logos 30s linear infinite;
+}
+
+/* Feature icon hover */
+.feature-icon {
+  transition: all 0.3s ease;
+}
+
+.glass-card:hover .feature-icon {
+  background: #FF4F00;
+  box-shadow: 0 0 20px rgba(255, 79, 0, 0.4);
+}
+
+/* Footer link hover */
+.footer-link {
+  position: relative;
+  transition: color 0.3s ease;
+}
+
+.footer-link::after {
+  content: '';
+  position: absolute;
+  bottom: -2px;
+  left: 0;
+  width: 0;
+  height: 1px;
+  background: #FF4F00;
+  transition: width 0.3s ease;
+}
+
+.footer-link:hover {
+  color: #1A1A1A;
+}
+
+.footer-link:hover::after {
+  width: 100%;
+}
+
+/* Infinite Marquee Animation */
+@keyframes marquee {
+  0% {
+    transform: translateX(0);
+  }
+  100% {
+    transform: translateX(-50%);
+  }
+}
+
+.animate-marquee {
+  animation: marquee 25s linear infinite;
+}
+
+.animate-marquee:hover {
+  animation-play-state: paused;
+}
+
+/* Orange accent button for auth/dashboard */
+.btn-accent-orange {
+  background: linear-gradient(135deg, #FF4F00, #FF6B2C);
+  color: white;
+  font-weight: 600;
+  transition: all 0.3s ease;
+}
+
+.btn-accent-orange:hover {
+  box-shadow: 0 4px 20px rgba(255, 79, 0, 0.4);
+  transform: translateY(-1px);
+}
+
+/* Orange focus ring for inputs */
+.input-orange-focus:focus {
+  border-color: #FF4F00 !important;
+  box-shadow: 0 0 0 2px rgba(255, 79, 0, 0.1) !important;
+}
