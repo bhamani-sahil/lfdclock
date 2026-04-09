@@ -22,6 +22,14 @@ export const SignupPage = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    if (password.length < 8) {
+      toast.error('Password must be at least 8 characters');
+      return;
+    }
+    if (!/[a-zA-Z]/.test(password) || !/[0-9]/.test(password)) {
+      toast.error('Password must contain at least one letter and one number');
+      return;
+    }
     setLoading(true);
 
     try {
@@ -180,10 +188,11 @@ export const SignupPage = () => {
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   required
-                  minLength={6}
+                  minLength={8}
                   data-testid="signup-password-input"
                   className="h-11 bg-white border-2 border-[#E8E2D9] focus:border-[#FF4F00] focus:ring-[#FF4F00]/20"
                 />
+                <p className="text-xs text-muted-foreground">At least 8 characters with a letter and a number</p>
               </div>
               <Button
                 type="submit"

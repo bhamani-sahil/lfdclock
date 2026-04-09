@@ -66,7 +66,6 @@ export const DashboardPage = () => {
   const [loading, setLoading] = useState(true);
   const [copied, setCopied] = useState(false);
   const [addDialogOpen, setAddDialogOpen] = useState(false);
-  const [seedingDemo, setSeedingDemo] = useState(false);
   const [activeTab, setActiveTab] = useState('active'); // 'active' | 'picked_up' | 'all'
 
   const isSettingsPage = location.pathname === '/settings';
@@ -105,18 +104,6 @@ export const DashboardPage = () => {
     navigate('/');
   };
 
-  const seedDemoData = async () => {
-    setSeedingDemo(true);
-    try {
-      await axios.post(`${API}/demo/seed`, {}, { headers: { Authorization: `Bearer ${token}` } });
-      toast.success('Demo shipments created!');
-      fetchData();
-    } catch (error) {
-      toast.error('Failed to create demo data');
-    } finally {
-      setSeedingDemo(false);
-    }
-  };
 
   const deleteShipment = async (id) => {
     try {
@@ -201,21 +188,7 @@ export const DashboardPage = () => {
                 <p className="text-muted-foreground">Track your container Last Free Days</p>
               </div>
               <div className="flex gap-3">
-                <TestEmailSMSDialog token={token} onSuccess={fetchData} />
-                <Button
-                  variant="outline"
-                  onClick={seedDemoData}
-                  disabled={seedingDemo}
-                  data-testid="seed-demo-btn"
-                >
-                  {seedingDemo ? (
-                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                  ) : (
-                    <Sparkles className="w-4 h-4 mr-2" />
-                  )}
-                  Load Demo Data
-                </Button>
-                <AddShipmentDialog 
+                <AddShipmentDialog
                   open={addDialogOpen} 
                   onOpenChange={setAddDialogOpen}
                   token={token}
@@ -296,7 +269,7 @@ export const DashboardPage = () => {
                 <Loader2 className="w-8 h-8 animate-spin text-muted-foreground" />
               </div>
             ) : shipments.length === 0 ? (
-              <EmptyState onSeedDemo={seedDemoData} seedingDemo={seedingDemo} />
+              <EmptyState />
             ) : (
               <div className="space-y-4">
                 {shipments
@@ -577,7 +550,7 @@ const ShipmentCard = ({ shipment, token, onDelete, onUpdate }) => {
   );
 };
 
-const EmptyState = ({ onSeedDemo, seedingDemo }) => (
+const EmptyState = () => (
   <Card className="border-dashed">
     <CardContent className="py-16 text-center">
       <div className="w-16 h-16 bg-slate-100 rounded-sm flex items-center justify-center mx-auto mb-4">
@@ -587,14 +560,6 @@ const EmptyState = ({ onSeedDemo, seedingDemo }) => (
       <p className="text-muted-foreground mb-6 max-w-md mx-auto">
         Drop a PDF above, forward emails to your inbound address, or add shipments manually.
       </p>
-      <Button onClick={onSeedDemo} disabled={seedingDemo} data-testid="empty-seed-demo-btn">
-        {seedingDemo ? (
-          <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-        ) : (
-          <Sparkles className="w-4 h-4 mr-2" />
-        )}
-        Load Demo Shipments
-      </Button>
     </CardContent>
   </Card>
 );
@@ -877,166 +842,6 @@ const AddShipmentDialog = ({ open, onOpenChange, token, onSuccess }) => {
   );
 };
 
-const TestEmailSMSDialog = ({ token, onSuccess }) => {
-  const [open, setOpen] = useState(false);
-  const [emailContent, setEmailContent] = useState('');
-  const [phoneNumber, setPhoneNumber] = useState('');
-  const [loading, setLoading] = useState(false);
-  const [result, setResult] = useState(null);
-
-  const sampleEmail = `Subject: Arrival Notice - Container MSCU1234567
-
-Dear Customer,
-
-Your shipment has arrived at the Port of Los Angeles.
-
-Container Number: MSCU1234567
-Vessel: MSC AURORA
-Arrival Date: March 10, 2026
-Last Free Day (LFD): March 15, 2026
-
-Please arrange pickup before the LFD to avoid demurrage charges.
-
-Best regards,
-Shipping Line`;
-
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    setLoading(true);
-    setResult(null);
-
-    try {
-      const response = await axios.post(
-        `${API}/test/email-sms`,
-        {
-          email_content: emailContent,
-          phone_number: phoneNumber
-        },
-        { headers: { Authorization: `Bearer ${token}` } }
-      );
-      
-      setResult(response.data);
-      toast.success('SMS sent successfully! Check your phone!');
-      onSuccess();
-    } catch (error) {
-      toast.error(error.response?.data?.detail || 'Test failed');
-      setResult({ error: error.response?.data?.detail || 'Test failed' });
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  return (
-    <Dialog open={open} onOpenChange={setOpen}>
-      <DialogTrigger asChild>
-        <Button variant="outline" className="bg-[#FF4F00]/10 border-[#FF4F00]/30 text-[#FF4F00] hover:bg-[#FF4F00]/20" data-testid="test-sms-btn">
-          <Zap className="w-4 h-4 mr-2" />
-          Test SMS
-        </Button>
-      </DialogTrigger>
-      <DialogContent className="sm:max-w-lg">
-        <DialogHeader>
-          <DialogTitle className="flex items-center gap-2">
-            <Smartphone className="w-5 h-5 text-[#FF4F00]" />
-            Test Email Parse + Real SMS
-          </DialogTitle>
-          <DialogDescription>
-            Paste email content, we'll parse it with AI and send you a REAL SMS!
-          </DialogDescription>
-        </DialogHeader>
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <div className="space-y-2">
-            <Label htmlFor="phone">Your Phone Number (with country code)</Label>
-            <Input
-              id="phone"
-              placeholder="+18257607425"
-              value={phoneNumber}
-              onChange={(e) => setPhoneNumber(e.target.value)}
-              required
-              data-testid="test-phone-input"
-              className="font-mono border-[#E8E2D9] focus:border-[#FF4F00]"
-            />
-            <p className="text-xs text-muted-foreground">Include country code (e.g., +1 for US, +91 for India)</p>
-          </div>
-          <div className="space-y-2">
-            <div className="flex items-center justify-between">
-              <Label htmlFor="email_content">Email Content</Label>
-              <Button
-                type="button"
-                variant="ghost"
-                size="sm"
-                onClick={() => setEmailContent(sampleEmail)}
-                className="text-xs text-[#FF4F00]"
-              >
-                Load Sample
-              </Button>
-            </div>
-            <Textarea
-              id="email_content"
-              placeholder="Paste your shipment email content here..."
-              value={emailContent}
-              onChange={(e) => setEmailContent(e.target.value)}
-              required
-              rows={8}
-              data-testid="test-email-input"
-              className="font-mono text-sm border-[#E8E2D9] focus:border-[#FF4F00]"
-            />
-          </div>
-          
-          {result && (
-            <div className={`p-4 rounded-lg text-sm ${result.error ? 'bg-red-50 border border-red-200' : result.action === 'updated' ? 'bg-amber-50 border border-amber-200' : 'bg-[#FF4F00]/10 border border-[#FF4F00]/30'}`}>
-              {result.error ? (
-                <p className="text-red-700">{result.error}</p>
-              ) : (
-                <div className="space-y-2">
-                  <p className={`font-medium flex items-center gap-2 ${result.action === 'updated' ? 'text-amber-700' : 'text-[#FF4F00]'}`}>
-                    <Check className="w-4 h-4" /> 
-                    {result.action === 'updated' ? 'Shipment UPDATED & SMS Sent!' : 'New Shipment Created & SMS Sent!'}
-                  </p>
-                  <p className={result.action === 'updated' ? 'text-amber-600' : 'text-[#FF4F00]/80'}>
-                    Container: {result.parsed_data?.container_number}
-                  </p>
-                  <p className={result.action === 'updated' ? 'text-amber-600' : 'text-[#FF4F00]/80'}>
-                    LFD: {result.parsed_data?.last_free_day?.substring(0, 10)}
-                  </p>
-                  <p className={result.action === 'updated' ? 'text-amber-600' : 'text-[#FF4F00]/80'}>
-                    Sent to: {result.sms?.sent_to}
-                  </p>
-                </div>
-              )}
-            </div>
-          )}
-
-          <div className="flex gap-3 pt-2">
-            <Button
-              type="button"
-              variant="outline"
-              onClick={() => setOpen(false)}
-              className="flex-1"
-            >
-              Cancel
-            </Button>
-            <Button
-              type="submit"
-              disabled={loading}
-              className="flex-1 btn-accent-glow rounded-lg"
-              data-testid="test-sms-submit-btn"
-            >
-              {loading ? (
-                <Loader2 className="w-4 h-4 animate-spin" />
-              ) : (
-                <>
-                  <Send className="w-4 h-4 mr-2" />
-                  Parse & Send SMS
-                </>
-              )}
-            </Button>
-          </div>
-        </form>
-      </DialogContent>
-    </Dialog>
-  );
-};
 
 const SettingsContent = ({ token }) => {
   const [settings, setSettings] = useState({
